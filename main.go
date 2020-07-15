@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/spinzed/tpong/game"
 )
 
@@ -14,9 +13,7 @@ func main() {
 		panic(err)
 	}
 
-	g.Start()
+	g.Loop()
 
-	fmt.Scanln()
-
-	g.Kill()
+	g.End()
 }
