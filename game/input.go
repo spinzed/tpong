@@ -1,14 +1,12 @@
 package game
 
 import (
-	"fmt"
-
 	"github.com/gdamore/tcell"
 )
 
-// event listener for the screen
-// must be called in separate goroutine since it is blocking
-func inputLoop(s tcell.Screen, c chan string) {
+// Input listener for the screen
+// Must be called in separate goroutine since it is blocking
+func inputLoop(s tcell.Screen, c chan<- string) {
 	for {
 		e := s.PollEvent()
 
@@ -20,26 +18,24 @@ func inputLoop(s tcell.Screen, c chan string) {
 			}
 
 			keyCodeMap := map[tcell.Key]string{
-				tcell.KeyUp:   eventP2Up,
-				tcell.KeyDown: eventP2Down,
+				tcell.KeyUp:    eventP2Up,
+				tcell.KeyDown:  eventP2Down,
 				tcell.KeyCtrlC: eventDestroy,
 			}
 
-			// end the loop if CtrlC is pressed.
-			// this is a temporary solution until I make the event loop.
-			// event loop must end the input loop, not the other way round
+			if m := keyMap[e.Rune()]; m != "" {
+				c <- m
+			} else if k := keyCodeMap[e.Key()]; k != "" {
+				c <- k
+			}
+
+			// since s.PollEvent is not a channel but a function, I cannot make
+			// a select statement with it and a channel which will listen for
+			// destroy event. I am still looking for a workaround because ending
+			// the input loop this way may have unintended consequences
 			if keyCodeMap[e.Key()] == eventDestroy {
 				return
 			}
-
-			if keyMap[e.Rune()] != "" {
-				fmt.Println("test")
-			} else if keyCodeMap[e.Key()] != "" {
-				fmt.Println("heyyy")
-			}
-
-			fmt.Println(e.Key())
-			fmt.Println(e.Rune())
 		}
 	}
 }

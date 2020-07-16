@@ -1,6 +1,8 @@
 package game
 
 import (
+	"time"
+
 	"github.com/gdamore/tcell"
 )
 
@@ -13,9 +15,10 @@ type Game struct {
 	screen  tcell.Screen
 	players Players
 	event   chan string
+	ticker  *time.Ticker
 }
 
-// Get a pair of players rady and initialised
+// Get a pair of players ready and initialised
 func newPlayers(initialPos int) Players {
 	p1 := newPlayer("p1", initialPos)
 	p2 := newPlayer("p2", initialPos)
@@ -23,7 +26,7 @@ func newPlayers(initialPos int) Players {
 	return Players{p1, p2}
 }
 
-// Creates screen ready to use
+// Create screen ready to use
 func initScreen() (tcell.Screen, error) {
 	s, err := tcell.NewScreen()
 
@@ -38,8 +41,9 @@ func initScreen() (tcell.Screen, error) {
 	return s, nil
 }
 
-// Initialise the game. Must be called on new game instance
+// Initialize the game. Must be called on new game instance
 func (g *Game) Init() error {
+	// screen init
 	s, err := initScreen()
 
 	if err != nil {
@@ -48,9 +52,17 @@ func (g *Game) Init() error {
 
 	g.screen = s
 
+	// event channel init
+	g.event = make(chan string)
+
+	// ticker init
+	g.ticker = time.NewTicker(1000000 / framerate * time.Microsecond)
+
+	//players init
 	_, h := g.screen.Size()
 	g.players = newPlayers((h - playerHeight) / 2)
 
+	// initial overlay
 	g.drawPlayer(g.players.P1)
 	g.drawPlayer(g.players.P2)
 	g.drawOverlay()
@@ -61,13 +73,39 @@ func (g *Game) Init() error {
 	return nil
 }
 
-// Starts the game. Must be called after initialisation
+// Start the game. Must be called after initialization
 func (g *Game) Loop() {
-	//defer g.screen.Fini()
+	// start the input loop
+	go inputLoop(g.screen, g.event)
 
-	// this starts the input loop. Until the event loop is implemented, it is for now
-	// synchronous, but it the future it should be in its own goroutine.
-	inputLoop(g.screen, g.event)
+	for {
+		select {
+		case <-g.ticker.C:
+			// update the screen every tick.
+			// this isn't expensive since this just checks for changes on the canvas
+			// and if there aren't any, nothing will be updated therefore no bloat
+			g.screen.Clear()
+
+			g.drawPlayer(g.players.P1)
+			g.drawPlayer(g.players.P2)
+			g.drawOverlay()
+
+			g.screen.Show()
+		case lol := <-g.event:
+			switch lol {
+			case eventDestroy:
+				return
+			case eventP1Up:
+				g.MovePlayerUp(&g.players.P1)
+			case eventP1Down:
+				g.MovePlayerDown(&g.players.P1)
+			case eventP2Up:
+				g.MovePlayerUp(&g.players.P2)
+			case eventP2Down:
+				g.MovePlayerDown(&g.players.P2)
+			}
+		}
+	}
 
 	g.screen.Show()
 }
@@ -78,8 +116,27 @@ func (g *Game) End() {
 	g.screen.Fini()
 }
 
+// Move player 1 char higher. If player is at the edge, do nothing.
+func (g *Game) MovePlayerUp(p *Player) {
+	if p.GetYPos() < 1 {
+		return
+	}
 
-// Draws overlay. Doesn't update the terminal
+	p.GoUp()
+}
+
+// Move player 1 char lower. If player is at the edge, do nothing.
+func (g *Game) MovePlayerDown(p *Player) {
+	_, h := g.screen.Size()
+
+	if p.GetYPos() > h-p.GetHeight()-1 {
+		return
+	}
+
+	p.GoDown()
+}
+
+// Draw overlay. Doesn't update the terminal
 func (g *Game) drawOverlay() {
 	w, h := g.screen.Size()
 
@@ -91,8 +148,7 @@ func (g *Game) drawOverlay() {
 	}
 }
 
-
-// Draws specified player. Doesn't update the terminal
+// Draw specified player. Doesn't update the terminal
 func (g *Game) drawPlayer(p Player) {
 	w, _ := g.screen.Size()
 	padding := 4
@@ -113,7 +169,7 @@ func (g *Game) drawPlayer(p Player) {
 	g.rect(leftpad, leftpad+p.GetWidth(), yPos, yPos+p.GetHeight(), ' ', st)
 }
 
-// Draws a rectangle. Doesn't update the terminal
+// Draw a rectangle. Doesn't update the terminal
 func (g *Game) rect(x1 int, x2 int, y1 int, y2 int, mainc rune, style tcell.Style) {
 	for i := x1; i < x2; i++ {
 		for j := y1; j < y2; j++ {

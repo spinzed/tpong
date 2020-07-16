@@ -1,10 +1,10 @@
 package game
 
 type Player struct {
-	tag string
-	score int
-	pos int
-	width int
+	tag    string
+	score  int
+	pos    int
+	width  int
 	height int
 }
 
@@ -21,15 +21,19 @@ func (p *Player) GetYPos() int {
 	return p.pos
 }
 
-func (p *Player) SetYPos(newpos int) {
-	p.pos = newpos
+func (p *Player) GoUp() {
+	p.pos--
+}
+
+func (p *Player) GoDown() {
+	p.pos++
 }
 
 func (p *Player) GetScore() int {
 	return p.score
 }
 
-func (p *Player) AddScore() {
+func (p *Player) AddPoint() {
 	p.score++
 }
 
