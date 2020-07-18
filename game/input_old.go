@@ -6,7 +6,7 @@ import (
 
 // Input listener for the screen
 // Must be called in separate goroutine since it is blocking
-func inputLoop(s tcell.Screen, c chan<- string) {
+func InputLoopOld(s tcell.Screen, c chan<- string) {
 	for {
 		e := s.PollEvent()
 

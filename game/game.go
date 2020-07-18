@@ -3,6 +3,7 @@ package game
 import (
 	"time"
 
+	"github.com/MarinX/keylogger"
 	"github.com/gdamore/tcell"
 )
 
@@ -12,10 +13,11 @@ type Players struct {
 }
 
 type Game struct {
-	screen  tcell.Screen
-	players Players
-	event   chan string
-	ticker  *time.Ticker
+	screen   tcell.Screen
+	players  Players
+	event    chan keyState
+	ticker   *time.Ticker
+	keyboard *keylogger.KeyLogger
 }
 
 // Get a pair of players ready and initialised
@@ -52,15 +54,26 @@ func (g *Game) Init() error {
 
 	g.screen = s
 
+	// players init
+	_, h := g.screen.Size()
+	g.players = newPlayers((h - playerHeight) / 2)
+
 	// event channel init
-	g.event = make(chan string)
+	g.event = make(chan keyState)
 
 	// ticker init
 	g.ticker = time.NewTicker(1000000 / framerate * time.Microsecond)
 
-	//players init
-	_, h := g.screen.Size()
-	g.players = newPlayers((h - playerHeight) / 2)
+	// keyboard init
+	k, err := newKeyboard()
+
+	if err != nil {
+		// Release the screen on fail. May move this elsewhere
+		g.screen.Fini()
+		return err
+	}
+
+	g.keyboard = k
 
 	// initial overlay
 	g.drawPlayer(g.players.P1)
@@ -75,8 +88,10 @@ func (g *Game) Init() error {
 
 // Start the game. Must be called after initialization
 func (g *Game) Loop() {
+	keys := make([]string, 0)
+
 	// start the input loop
-	go inputLoop(g.screen, g.event)
+	go keyboardListen(g.keyboard, g.event)
 
 	for {
 		select {
@@ -84,6 +99,23 @@ func (g *Game) Loop() {
 			// update the screen every tick.
 			// this isn't expensive since this just checks for changes on the canvas
 			// and if there aren't any, nothing will be updated therefore no bloat
+			//fmt.Println(strings.Join(keys, " "))
+
+			for _, key := range keys {
+				switch key {
+				case "Q":
+					return
+				case "W":
+					g.MovePlayerUp(&g.players.P1)
+				case "S":
+					g.MovePlayerDown(&g.players.P1)
+				case "Up":
+					g.MovePlayerUp(&g.players.P2)
+				case "Down":
+					g.MovePlayerDown(&g.players.P2)
+				}
+			}
+
 			g.screen.Clear()
 
 			g.drawPlayer(g.players.P1)
@@ -92,26 +124,31 @@ func (g *Game) Loop() {
 
 			g.screen.Show()
 		case lol := <-g.event:
-			switch lol {
-			case eventDestroy:
-				return
-			case eventP1Up:
-				g.MovePlayerUp(&g.players.P1)
-			case eventP1Down:
-				g.MovePlayerDown(&g.players.P1)
-			case eventP2Up:
-				g.MovePlayerUp(&g.players.P2)
-			case eventP2Down:
-				g.MovePlayerDown(&g.players.P2)
+			// filter the slice from the key if it is in there
+			newKeys := make([]string, 0)
+
+			for _, key := range keys {
+				if lol.Name != key {
+					newKeys = append(newKeys, key)
+				}
 			}
+
+			// update only if there are less than 5 chars and key is pressed down
+			if len(keys) < 5 && lol.Down {
+				newKeys = append(newKeys, lol.Name)
+			}
+
+			// update the old array
+			keys = newKeys
 		}
 	}
-
-	g.screen.Show()
 }
 
 // End the game
 func (g *Game) End() {
+	// End keyboard listeners
+	g.keyboard.Close()
+
 	// Release the screen resources
 	g.screen.Fini()
 }
