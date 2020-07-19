@@ -41,22 +41,27 @@ type keyState struct {
 
 // Listen for keyboard events and dispatch them through a channel.
 // It will block so it must be called in a separate goroutine
-func keyboardListen(k *keylogger.KeyLogger, c chan keyState) {
+func keyboardListen(k *keylogger.KeyLogger, c chan keyState, che chan string) {
 	kch := k.Read()
 
-	for e := range kch {
-		switch e.Type {
-		case keylogger.EvKey:
-			// I must make separate checks for KeyPress and KeyRelease because
-			// it can happen that a key is held down continuously, in that case
-			// both methods return false
-			if e.KeyPress() {
-				c <- keyState{e.KeyString(), true}
-			}
+	for {
+		select {
+		case e := <-kch:
+			switch e.Type {
+			case keylogger.EvKey:
+				// there are separate checks for KeyPress and KeyRelease because
+				// it can happen that a key is held down continuously, in that case
+				// both methods return false
+				if e.KeyPress() {
+					c <- keyState{e.KeyString(), true}
+				}
 
-			if e.KeyRelease() {
-				c <- keyState{e.KeyString(), false}
+				if e.KeyRelease() {
+					c <- keyState{e.KeyString(), false}
+				}
 			}
+		case <-che:
+			return
 		}
 	}
 }

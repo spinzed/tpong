@@ -1,10 +1,13 @@
 package game
 
 import (
+	"os"
+	"os/exec"
 	"time"
 
 	"github.com/MarinX/keylogger"
 	"github.com/gdamore/tcell"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type Players struct {
@@ -18,6 +21,7 @@ type Game struct {
 	event    chan keyState
 	ticker   *time.Ticker
 	keyboard *keylogger.KeyLogger
+	oldstate *terminal.State
 }
 
 // Get a pair of players ready and initialised
@@ -45,6 +49,16 @@ func initScreen() (tcell.Screen, error) {
 
 // Initialize the game. Must be called on new game instance
 func (g *Game) Init() error {
+	// This is a workaround since g.screen.Fini is broken. Save terminal old state
+	// before making it raw for tcell to use
+	oldState, err := terminal.MakeRaw(0)
+
+	if err != nil {
+		return err
+	}
+
+	g.oldstate = oldState
+
 	// screen init
 	s, err := initScreen()
 
@@ -88,10 +102,14 @@ func (g *Game) Init() error {
 
 // Start the game. Must be called after initialization
 func (g *Game) Loop() {
+	// make sure than end cleanup function is executed
+	defer g.End()
+
 	keys := make([]string, 0)
+	endChan := make(chan string)
 
 	// start the input loop
-	go keyboardListen(g.keyboard, g.event)
+	go keyboardListen(g.keyboard, g.event, endChan)
 
 	for {
 		select {
@@ -146,11 +164,14 @@ func (g *Game) Loop() {
 
 // End the game
 func (g *Game) End() {
-	// End keyboard listeners
-	g.keyboard.Close()
+	// clear the screen. The second line connects the command's stdout with
+	// the of one of this terminal's session
+	clr := exec.Command("clear")
+	clr.Stdout = os.Stdout
+	clr.Run()
 
-	// Release the screen resources
-	g.screen.Fini()
+	// bring teminal back from raw mode
+	terminal.Restore(0, g.oldstate)
 }
 
 // Move player 1 char higher. If player is at the edge, do nothing.

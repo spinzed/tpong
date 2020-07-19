@@ -5,6 +5,7 @@ import (
 )
 
 func main() {
+
 	g := game.Game{}
 
 	err := g.Init()
@@ -15,5 +16,4 @@ func main() {
 
 	g.Loop()
 
-	g.End()
 }
