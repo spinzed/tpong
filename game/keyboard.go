@@ -39,10 +39,22 @@ type keyState struct {
 	Down bool
 }
 
+func getEvent(m *map[string]string, k string) string {
+	return (*m)[k]
+}
+
 // Listen for keyboard events and dispatch them through a channel.
 // It will block so it must be called in a separate goroutine
-func keyboardListen(k *keylogger.KeyLogger, c chan keyState, che chan string) {
+func keyboardListen(k *keylogger.KeyLogger, c chan keyState) {
 	kch := k.Read()
+
+	events := map[string]string{
+		"Q":    eventDestroy,
+		"W":    eventP1Up,
+		"S":    eventP1Down,
+		"Up":   eventP2Up,
+		"Down": eventP2Down,
+	}
 
 	for {
 		select {
@@ -52,16 +64,16 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState, che chan string) {
 				// there are separate checks for KeyPress and KeyRelease because
 				// it can happen that a key is held down continuously, in that case
 				// both methods return false
-				if e.KeyPress() {
-					c <- keyState{e.KeyString(), true}
-				}
+				if ev := getEvent(&events, e.KeyString()); ev != "" {
+					if e.KeyPress() {
+						c <- keyState{ev, true}
+					}
 
-				if e.KeyRelease() {
-					c <- keyState{e.KeyString(), false}
+					if e.KeyRelease() {
+						c <- keyState{ev, false}
+					}
 				}
 			}
-		case <-che:
-			return
 		}
 	}
 }

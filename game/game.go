@@ -106,34 +106,32 @@ func (g *Game) Loop() {
 	defer g.End()
 
 	keys := make([]string, 0)
-	endChan := make(chan string)
 
-	// start the input loop
-	go keyboardListen(g.keyboard, g.event, endChan)
+	// start the keyboard input listeners
+	go keyboardListen(g.keyboard, g.event)
 
 	for {
 		select {
 		case <-g.ticker.C:
 			// update the screen every tick.
-			// this isn't expensive since this just checks for changes on the canvas
-			// and if there aren't any, nothing will be updated therefore no bloat
-			//fmt.Println(strings.Join(keys, " "))
 
 			for _, key := range keys {
 				switch key {
-				case "Q":
+				case eventDestroy:
 					return
-				case "W":
+				case eventP1Up:
 					g.MovePlayerUp(&g.players.P1)
-				case "S":
+				case eventP1Down:
 					g.MovePlayerDown(&g.players.P1)
-				case "Up":
+				case eventP2Up:
 					g.MovePlayerUp(&g.players.P2)
-				case "Down":
+				case eventP2Down:
 					g.MovePlayerDown(&g.players.P2)
 				}
 			}
 
+			// these aren't expensive since they just check for changes on the canvas
+			// and if there aren't any, nothing will be updated therefore no bloat
 			g.screen.Clear()
 
 			g.drawPlayer(g.players.P1)
