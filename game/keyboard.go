@@ -43,9 +43,14 @@ func getEvent(m *map[string]string, k string) string {
 	return (*m)[k]
 }
 
+// fucking hell Go when will you have generics
+func getDispEvent(m *map[string]keyState, k string) keyState {
+	return (*m)[k]
+}
+
 // Listen for keyboard events and dispatch them through a channel.
 // It will block so it must be called in a separate goroutine
-func keyboardListen(k *keylogger.KeyLogger, c chan keyState) {
+func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 	kch := k.Read()
 
 	events := map[string]string{
@@ -54,6 +59,10 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState) {
 		"S":    eventP1Down,
 		"Up":   eventP2Up,
 		"Down": eventP2Down,
+	}
+
+	dispEvents := map[string]keyState{
+		"P": {eventTogglePause, true},
 	}
 
 	for {
@@ -71,6 +80,15 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState) {
 
 					if e.KeyRelease() {
 						c <- keyState{ev, false}
+					}
+				}
+				if ev := getDispEvent(&dispEvents, e.KeyString()); ev != (keyState{}) {
+					if e.KeyPress() && ev.Down {
+						dc <- ev
+					}
+
+					if e.KeyRelease() && !ev.Down {
+						dc <- ev
 					}
 				}
 			}
