@@ -28,7 +28,7 @@ type Game struct {
 	paused    bool
 }
 
-// Get a pair of players ready and i2 to the power of 64nitialised
+// Get a pair of players ready and initialised
 func newPlayers(w int, h int, padding int) *Players {
 	initialPos := (h - platformHeight) / 2
 	p1 := newPlayer("p1", initialPos, padding)
@@ -56,6 +56,17 @@ func initScreen() (tcell.Screen, error) {
 func (g *Game) Init() error {
 	// This is a workaround since g.screen.Fini is broken. Save terminal old state
 	// before making it raw for tcell to use
+
+	// keyboard init
+	k, err := newKeyboard()
+
+	if err != nil {
+		return err
+	}
+
+	g.keyboard = k
+
+	// putting terminal to raw state
 	oldState, err := terminal.MakeRaw(0)
 
 	if err != nil {
@@ -92,17 +103,6 @@ func (g *Game) Init() error {
 
 	// ticker init
 	g.ticker = time.NewTicker(1000000 / framerate * time.Microsecond)
-
-	// keyboard init
-	k, err := newKeyboard()
-
-	if err != nil {
-		// Release the screen on fail. May move this elsewhere
-		g.screen.Fini()
-		return err
-	}
-
-	g.keyboard = k
 
 	// initial overlay
 	g.drawPlayer(*g.players.P1)
@@ -174,15 +174,19 @@ func (g *Game) End() {
 
 	// clear the screen. The second line connects the command's stdout with
 	// the of one of this terminal's session
-	g.screen.Clear()
-	g.screen.Show()
+	if g.screen != nil {
+		g.screen.Clear()
+		g.screen.Show()
 
-	clr := exec.Command("clear")
-	clr.Stdout = os.Stdout
-	clr.Run()
+		clr := exec.Command("clear")
+		clr.Stdout = os.Stdout
+		clr.Run()
+	}
 
 	// bring teminal back from raw mode
-	terminal.Restore(0, g.oldstate)
+	if g.oldstate != nil {
+		terminal.Restore(0, g.oldstate)
+	}
 }
 
 // Move player 1 char higher. If player is at the edge, do nothing.

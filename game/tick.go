@@ -29,6 +29,7 @@ func (g *Game) Tick(keys *[]string) {
 	g.drawPlayer(*g.players.P1)
 	g.drawPlayer(*g.players.P2)
 	g.drawBall()
+	g.drawScores()
 	g.drawOverlay()
 
 	g.screen.Show()

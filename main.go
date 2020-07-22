@@ -11,9 +11,9 @@ func main() {
 	err := g.Init()
 
 	if err != nil {
+		g.End()
 		panic(err)
 	}
 
 	g.Loop()
-
 }

@@ -14,6 +14,6 @@ const (
 	platformWidth     = 1
 	platformHeight    = 6
 	padding           = 10
-	letterWidth       = 6
+	letterWidth       = 8
 	letterHeight      = 7
 )
