@@ -18,20 +18,27 @@ func newNoKeyboardError(t string) error {
 }
 
 // Initialize a new keylogger
-func newKeyboard() (*keylogger.KeyLogger, error) {
-	kb := keylogger.FindKeyboardDevice()
+func newKeyboard() ([]*keylogger.KeyLogger, error) {
+	// I implemented this (:b
+	kbs := keylogger.FindAllKeyboardDevices()
 
-	if kb == "" {
+	if len(kbs) < 1 {
 		return nil, newNoKeyboardError("No keyboard detected")
 	}
 
-	k, err := keylogger.New(kb)
+	allKbs := make([]*keylogger.KeyLogger, 0)
 
-	if err != nil {
-		return nil, err
+	for _, kb := range kbs {
+		k, err := keylogger.New(kb)
+
+		if err != nil {
+			return nil, err
+		}
+
+		allKbs = append(allKbs, k)
 	}
 
-	return k, nil
+	return allKbs, nil
 }
 
 type keyState struct {
@@ -54,7 +61,6 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 	kch := k.Read()
 
 	events := map[string]string{
-		"Q":    eventDestroy,
 		"W":    eventP1Up,
 		"S":    eventP1Down,
 		"Up":   eventP2Up,
@@ -62,7 +68,9 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 	}
 
 	dispEvents := map[string]keyState{
+		"Q": {eventDestroy, true},
 		"P": {eventTogglePause, true},
+		"R": {eventReset, true},
 	}
 
 	for {

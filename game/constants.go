@@ -7,9 +7,13 @@ const (
 	eventP2Up         = "eventP2Up"
 	eventP2Down       = "eventP2Down"
 	eventTogglePause  = "eventTogglePause"
-	eventDestroy      = "destroy"
+	eventDestroy      = "eventDestroy"
+	eventReset        = "eventReset"
 	eventEndInputLoop = "eventEndInputLoop"
-	playerWidth       = 1
-	playerHeight      = 6
+	ballDiam          = 1
+	platformWidth     = 1
+	platformHeight    = 6
 	padding           = 10
+	letterWidth       = 6
+	letterHeight      = 7
 )

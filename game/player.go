@@ -7,11 +7,13 @@ type Player struct {
 	ypos   int
 	width  int
 	height int
+	initx  int
+	inity  int
 }
 
 // get a new player instance
 func newPlayer(tag string, initialPos int, padx int) *Player {
-	p := Player{tag, 0, padx, initialPos, playerWidth, playerHeight}
+	p := Player{tag, 0, padx, initialPos, platformWidth, platformHeight, padx, initialPos}
 	return &p
 }
 
@@ -45,4 +47,9 @@ func (p *Player) GetHeight() int {
 
 func (p *Player) GetTag() string {
 	return p.tag
+}
+
+func (p *Player) Reset() {
+	p.ypos = p.initx
+	p.ypos = p.inity
 }
