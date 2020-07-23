@@ -3,7 +3,7 @@ package game
 func (g *Game) Tick(keys *[]string) {
 	// update the game state every tick.
 
-	if g.paused {
+	if g.paused || g.hardPaused {
 		return
 	}
 
@@ -11,13 +11,13 @@ func (g *Game) Tick(keys *[]string) {
 	for _, key := range *keys {
 		switch key {
 		case eventP1Up:
-			g.MovePlayerUp(g.players.P1)
+			g.movePlayerUp(g.players.P1)
 		case eventP1Down:
-			g.MovePlayerDown(g.players.P1)
+			g.movePlayerDown(g.players.P1)
 		case eventP2Up:
-			g.MovePlayerUp(g.players.P2)
+			g.movePlayerUp(g.players.P2)
 		case eventP2Down:
-			g.MovePlayerDown(g.players.P2)
+			g.movePlayerDown(g.players.P2)
 		}
 	}
 

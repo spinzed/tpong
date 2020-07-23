@@ -1,6 +1,9 @@
 package game
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/gdamore/tcell"
 )
 
@@ -45,28 +48,61 @@ func (g *Game) drawBall() {
 func (g *Game) drawScores() {
 	w, h := g.screen.Size()
 
-	sch := h/10
-	scw1 := w/4
-	scw2 := scw1*3
+	// set the top padding
+	padY := h/10 - letterHeight/2
 
-	score1 := g.players.P1.GetScore()
-	score2 := g.players.P2.GetScore()
-
-	num1 := getCellsFromNum(score1)
-	num2 := getCellsFromNum(score2)
-
-	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
-
-	for _, char := range num1 {
-		x := scw1 + int(char[0])
-		y := sch + int(char[1])
-		g.screen.SetContent(x, y, ' ', nil, st)
+	// this makes sure that padding isn't smaller than one
+	if padY < 1 {
+		padY = 1
 	}
 
-	for _, char := range num2 {
-		x := scw2 + int(char[0])
-		y := sch + int(char[1])
-		g.screen.SetContent(x, y, ' ', nil, st)
+	// temporary copy-pasted color
+	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
+
+	for _, p := range g.players.Arrayify() {
+		// set the middle point of the letter
+		mid := w / 4
+
+		if p.GetTag() == playerP2 {
+			mid *= 3
+		}
+
+		// get the score and parse it in slice of string digits - 25 -> { "2", "5" }
+		score := p.GetScore()
+		parsedNums := strings.Split(strconv.Itoa(score), "")
+
+		// get the total length of all letters with spacing
+		totalXLen := len(parsedNums)*letterWidth + (len(parsedNums)-1)*letterSpacing
+
+		// starting point - subtract half of the full length of all letters
+		start := mid - totalXLen/2
+
+		for i, strchar := range parsedNums {
+			// current letter x offset
+			xOffset := start + totalXLen/len(parsedNums)*i
+
+			// add between-letter spacing if necessary
+			if i != 0 && i < len(parsedNums) {
+				xOffset += i * letterSpacing
+			}
+
+			// cast the string-char back to int
+			parsedNum, err := strconv.Atoi(strchar)
+
+			if err != nil {
+				panic(err)
+			}
+
+			// get cells for that number
+			readyNum := getCellsFromNum(parsedNum)
+
+			// draw each number cell
+			for _, char := range readyNum {
+				x := xOffset + int(char[0])
+				y := padY + int(char[1])
+				g.screen.SetContent(x, y, ' ', nil, st)
+			}
+		}
 	}
 }
 

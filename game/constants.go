@@ -10,10 +10,13 @@ const (
 	eventDestroy      = "eventDestroy"
 	eventReset        = "eventReset"
 	eventEndInputLoop = "eventEndInputLoop"
+	playerP1		  = "p1"
+	playerP2		  = "p2"
 	ballDiam          = 1
 	platformWidth     = 1
 	platformHeight    = 6
 	padding           = 10
 	letterWidth       = 8
 	letterHeight      = 7
+	letterSpacing     = 1
 )

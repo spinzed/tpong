@@ -22,7 +22,6 @@ func getCellsFromNum(n int) [][]uint {
 			{3, 3}, {4, 3},
 			{3, 4}, {4, 4},
 			{3, 5}, {4, 5},
-			{3, 6}, {4, 6},
 		}
 	case 2:
 		return [][]uint{

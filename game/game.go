@@ -15,24 +15,29 @@ type Players struct {
 	P2 *Player
 }
 
+func (p *Players) Arrayify() []*Player {
+	return []*Player{p.P1,p.P2}
+}
+
 type Game struct {
-	screen    tcell.Screen
-	players   *Players
-	ball      *Ball
-	keys      *[]string
-	event     chan keyState
-	dispEvent chan keyState
-	ticker    *time.Ticker
-	keyboard  []*keylogger.KeyLogger
-	oldstate  *terminal.State
-	paused    bool
+	screen     tcell.Screen
+	players    *Players
+	ball       *Ball
+	keys       *[]string
+	event      chan keyState
+	dispEvent  chan keyState
+	ticker     *time.Ticker
+	keyboard   []*keylogger.KeyLogger
+	oldstate   *terminal.State
+	paused     bool
+	hardPaused bool
 }
 
 // Get a pair of players ready and initialised
 func newPlayers(w int, h int, padding int) *Players {
 	initialPos := (h - platformHeight) / 2
-	p1 := newPlayer("p1", initialPos, padding)
-	p2 := newPlayer("p2", initialPos, w-padding)
+	p1 := newPlayer(playerP1, initialPos, padding)
+	p2 := newPlayer(playerP2, initialPos, w-padding)
 
 	return &Players{p1, p2}
 }
@@ -161,6 +166,7 @@ func (g *Game) Loop() {
 	}
 }
 
+// Reset the game
 func (g *Game) Reset() {
 	g.ball.Reset()
 	g.players.P1.Reset()
@@ -190,7 +196,7 @@ func (g *Game) End() {
 }
 
 // Move player 1 char higher. If player is at the edge, do nothing.
-func (g *Game) MovePlayerUp(p *Player) {
+func (g *Game) movePlayerUp(p *Player) {
 	if _, h := p.Coords(); h < 1 {
 		return
 	}
@@ -199,7 +205,7 @@ func (g *Game) MovePlayerUp(p *Player) {
 }
 
 // Move player 1 char lower. If player is at the edge, do nothing.
-func (g *Game) MovePlayerDown(p *Player) {
+func (g *Game) movePlayerDown(p *Player) {
 	_, sh := g.screen.Size()
 	_, ph := p.Coords()
 
@@ -217,18 +223,31 @@ func (g *Game) checkCollision() {
 	sw, sh := g.screen.Size()
 
 	// wall collisions
-	// x portion is temporary, just for testing purposes for now
 	if w < 1 && vx < 0 {
 		g.ball.SwitchX()
 		g.players.P2.AddPoint()
-		time.Sleep(2 * time.Second)
-		g.Reset()
+
+		// hardPause cannot be unpaused by player
+		g.hardPaused = true
+
+		go func() {
+			time.Sleep(2 * time.Second)
+			g.hardPaused = false
+			g.Reset()
+		}()
 	}
 	if w >= sw-2*d-1 && vx > 0 {
 		g.ball.SwitchX()
 		g.players.P1.AddPoint()
-		time.Sleep(2 * time.Second)
-		g.Reset()
+
+		// hardPause cannot be unpaused by player
+		g.hardPaused = true
+
+		go func() {
+			time.Sleep(2 * time.Second)
+			g.hardPaused = false
+			g.Reset()
+		}()
 	}
 	if h <= 1 && vy < 0 {
 		g.ball.SwitchY()
