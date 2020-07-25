@@ -1,18 +1,39 @@
 # It's Pong!
 The old school Atari Pong game remade in terminal with Golang.  
 
-# General Info & State of the Project
+# General Info
+The game currently works only for Linux systems due to platform-dependent key detection.  
+For a similar reason, this game must be run with superuser privileges.  
+
 To interact with terminal, the [tcell](https://github.com/gdamore/tcell) package API is used.  
+For keyboard events detection, the [keylogger](https://github.com/MarinX/keylogger) package API is used.  
 
-This project is in very early stages, very few things are implemented at the moment.
+# Compile & Run
+To compile this project into an executable, run:
+```shell
+go get github.com/spinzed/tpong
+```
+You should be able to run the game via command `sudo tpong`.  
+**Note:** make sure than `$GOPATH/bin` is in your path, otherwise you won't be able to run the command from anywhere else but from `$GOPATH/bin`.  
 
-## Further Plans & Todos
-- Make it interactive
-- Make it interactive for both players
-- Implement collision system
-- Implement scoring system
+Alternative is to git clone this repo, cd into it and run:
+```shell
+sudo go run .
+```
+# Controls
+|  Key  |     Action    |
+|:-----:|:-------------:|
+|   W   |   Player1 Up  |
+|   S   |  Player1 Down |
+|   ↑   |   Player2 Up  |
+|   ↓   |  Player2 Down |
+| Space |     Start     |
+|   Q   |      Quit     |
+|   P   |  Toggle Pause |
+|   R   | Restart Round |
 
-If it works out, eventually I may expand the project:
+# Further Plans & Todos
+Eventually, this project may be expanded:
 1. that it can be hosted via HTTP API
 2. that it is compatible with online play
 
