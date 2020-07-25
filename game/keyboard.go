@@ -60,6 +60,8 @@ func getDispEvent(m *map[string]keyState, k string) keyState {
 func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 	kch := k.Read()
 
+	// for these, press and release events are dispatched
+	// an action is happening between 2 dispatched of this event (up and down dispatch)
 	events := map[string]string{
 		"W":    eventP1Up,
 		"S":    eventP1Down,
@@ -67,10 +69,13 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 		"Down": eventP2Down,
 	}
 
+	// for these events, only one event is dispatched - up or down
+	// after event is dispached, an action is immediately called
 	dispEvents := map[string]keyState{
-		"Q": {eventDestroy, true},
-		"P": {eventTogglePause, true},
-		"R": {eventReset, true},
+		"Q":     {eventDestroy, true},
+		"P":     {eventTogglePause, true},
+		"R":     {eventReset, true},
+		"SPACE": {eventStart, true},
 	}
 
 	for {

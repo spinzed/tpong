@@ -3,7 +3,7 @@ package game
 func (g *Game) Tick(keys *[]string) {
 	// update the game state every tick.
 
-	if g.paused || g.hardPaused {
+	if !g.started || g.paused || g.hardPaused {
 		return
 	}
 
@@ -26,15 +26,16 @@ func (g *Game) Tick(keys *[]string) {
 	// and if there aren't any, nothing will be updated therefore no bloat
 	g.screen.Clear()
 
-	g.drawPlayer(*g.players.P1)
-	g.drawPlayer(*g.players.P2)
-	g.drawBall()
 	g.drawScores()
 	g.drawOverlay()
+	g.drawPlayers()
 
-	g.screen.Show()
-
+	// first start is for initial delay
 	// move the ball for 1 tick
-	g.checkCollision()
 	g.ball.Move()
+	g.checkCollision()
+	g.drawBall()
+
+	// at last, update the terminal
+	g.screen.Show()
 }

@@ -1,13 +1,10 @@
 package game
 
 import (
-	"os"
-	"os/exec"
 	"time"
 
 	"github.com/MarinX/keylogger"
 	"github.com/gdamore/tcell"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 type Players struct {
@@ -15,8 +12,8 @@ type Players struct {
 	P2 *Player
 }
 
-func (p *Players) Arrayify() []*Player {
-	return []*Player{p.P1,p.P2}
+func (p *Players) GetAll() []*Player {
+	return []*Player{p.P1, p.P2}
 }
 
 type Game struct {
@@ -28,7 +25,7 @@ type Game struct {
 	dispEvent  chan keyState
 	ticker     *time.Ticker
 	keyboard   []*keylogger.KeyLogger
-	oldstate   *terminal.State
+	started    bool
 	paused     bool
 	hardPaused bool
 }
@@ -71,15 +68,6 @@ func (g *Game) Init() error {
 
 	g.keyboard = k
 
-	// putting terminal to raw state
-	oldState, err := terminal.MakeRaw(0)
-
-	if err != nil {
-		return err
-	}
-
-	g.oldstate = oldState
-
 	// screen init
 	s, err := initScreen()
 
@@ -109,13 +97,6 @@ func (g *Game) Init() error {
 	// ticker init
 	g.ticker = time.NewTicker(1000000 / framerate * time.Microsecond)
 
-	// initial overlay
-	g.drawPlayer(*g.players.P1)
-	g.drawPlayer(*g.players.P2)
-	g.drawOverlay()
-
-	g.screen.Show()
-
 	// signal that everything is ok
 	return nil
 }
@@ -125,11 +106,26 @@ func (g *Game) Loop() {
 	// make sure than end cleanup function is executed
 	defer g.End()
 
+	// polling events from terminal has been substituted for listening for events from
+	// /dev/input/event*, but this has to be left dangling like this for g.screen.Fini
+	// to function properly
+	go func() {
+		for {
+			g.screen.PollEvent()
+		}
+	}()
+
 	// start the keyboard input listeners
 	// Im a bloody genious
 	for _, kb := range g.keyboard {
 		go keyboardListen(kb, g.event, g.dispEvent)
 	}
+
+	// initial screen overlay
+	g.drawOverlay()
+	g.drawPlayers()
+	g.drawStartText()
+	g.screen.Show()
 
 	for {
 		select {
@@ -157,8 +153,10 @@ func (g *Game) Loop() {
 			switch e.Name {
 			case eventDestroy:
 				return
+			case eventStart:
+				g.Start()
 			case eventTogglePause:
-				g.paused = !g.paused
+				g.togglePause()
 			case eventReset:
 				g.Reset()
 			}
@@ -166,37 +164,56 @@ func (g *Game) Loop() {
 	}
 }
 
+// Start the game
+func (g *Game) Start() {
+	g.started = true
+}
+
 // Reset the game
 func (g *Game) Reset() {
 	g.ball.Reset()
-	g.players.P1.Reset()
-	g.players.P2.Reset()
+
+	for _, p := range g.players.GetAll() {
+		p.Reset()
+	}
+
+	g.screen.Clear()
+
+	g.drawScores()
+	g.drawOverlay()
+	g.drawPlayers()
+
+	if g.paused {
+		g.drawPauseText()
+	}
+
+	g.screen.Show()
+}
+
+// Toggle pause
+func (g *Game) togglePause() {
+	if !g.started || g.hardPaused {
+		return
+	}
+
+	g.paused = !g.paused
+
+	if g.paused {
+		g.drawPauseText()
+		g.screen.Show()
+	}
 }
 
 // End the game
 func (g *Game) End() {
-	// there is a problem where keyboard input persists and it is shown in the
-	// command line when the game exits. Looking for fix
-
-	// clear the screen. The second line connects the command's stdout with
-	// the of one of this terminal's session
-	if g.screen != nil {
-		g.screen.Clear()
-		g.screen.Show()
-
-		clr := exec.Command("clear")
-		clr.Stdout = os.Stdout
-		clr.Run()
-	}
-
-	// bring teminal back from raw mode
-	if g.oldstate != nil {
-		terminal.Restore(0, g.oldstate)
-	}
+	// g.screen.Fini() is fixed, but a leftover "q" is left when terminal is closed.
+	// looking for fix
+	g.screen.Fini()
 }
 
 // Move player 1 char higher. If player is at the edge, do nothing.
 func (g *Game) movePlayerUp(p *Player) {
+	// if the platform is at the top edge, do nothing
 	if _, h := p.Coords(); h < 1 {
 		return
 	}
@@ -209,6 +226,7 @@ func (g *Game) movePlayerDown(p *Player) {
 	_, sh := g.screen.Size()
 	_, ph := p.Coords()
 
+	// if the platform is at the bottom edge, do nothing
 	if ph > sh-p.GetHeight()-1 {
 		return
 	}
@@ -216,6 +234,7 @@ func (g *Game) movePlayerDown(p *Player) {
 	p.GoDown()
 }
 
+// Check and handle collisions between balls, walls and platforms
 func (g *Game) checkCollision() {
 	w, h := g.ball.Coords()
 	d := g.ball.Diam()
@@ -224,27 +243,25 @@ func (g *Game) checkCollision() {
 
 	// wall collisions
 	if w < 1 && vx < 0 {
-		g.ball.SwitchX()
 		g.players.P2.AddPoint()
 
 		// hardPause cannot be unpaused by player
 		g.hardPaused = true
 
 		go func() {
-			time.Sleep(2 * time.Second)
+			time.Sleep(scoreSleepSecs * time.Second)
 			g.hardPaused = false
 			g.Reset()
 		}()
 	}
 	if w >= sw-2*d-1 && vx > 0 {
-		g.ball.SwitchX()
 		g.players.P1.AddPoint()
 
 		// hardPause cannot be unpaused by player
 		g.hardPaused = true
 
 		go func() {
-			time.Sleep(2 * time.Second)
+			time.Sleep(scoreSleepSecs * time.Second)
 			g.hardPaused = false
 			g.Reset()
 		}()
@@ -260,10 +277,10 @@ func (g *Game) checkCollision() {
 	p1w, p1h := g.players.P1.Coords()
 	p2w, p2h := g.players.P2.Coords()
 
-	if h+d > p1h && h < p1h+platformHeight && (p1w+platformWidth)/2 == w/2 {
+	if h+d > p1h && h < p1h+platformHeight && (p1w+platformWidth)/2+1 == w/2 {
 		g.ball.SwitchX()
 	}
-	if h+d > p2h && h < p2h+platformHeight && p2w/2 == w/2+d {
+	if h+d > p2h && h < p2h+platformHeight && p2w/2+1 == w/2+d {
 		g.ball.SwitchX()
 	}
 }

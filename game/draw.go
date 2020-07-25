@@ -13,8 +13,55 @@ func (g *Game) drawOverlay() {
 	// temporary copy-pasted color
 	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
 
+	// dashed line in the middle
 	for i := 2; i < h; i += 4 {
 		g.rect(w/2, w/2+1, i, i+3, ' ', st)
+	}
+}
+
+func (g *Game) drawStartText() {
+	_, h := g.screen.Size()
+
+	// temporary copy-pasted color
+	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
+
+	text := [][]rune{
+		[]rune("  Space  - Start Game"),
+		[]rune("    P    - Pause Game"),
+		[]rune("    R    - Restart Round"),
+		[]rune("    Q    - Quit"),
+		[]rune(" = P1 ="),
+		[]rune("    W    - Move Up,     S     - Move Down"),
+		[]rune(" = P2 ="),
+		[]rune(" ArrowUp - Move Up, ArrowDown - Move Down"),
+	}
+
+	g.lines(0, h-len(text)-1, text, st)
+}
+
+func (g *Game) drawPauseText() {
+	_, h := g.screen.Size()
+
+	// temporary copy-pasted color
+	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
+
+	text := [][]rune{
+		[]rune(" == PAUSE =="),
+		[]rune("    P    - Unpause Game"),
+		[]rune("    R    - Restart Round"),
+		[]rune("    Q    - Quit"),
+		[]rune(" = P1 ="),
+		[]rune("   W     - Move Up,     S     - Move Down"),
+		[]rune(" = P2 ="),
+		[]rune(" ArrowUp - Move Up, ArrowDown - Move Down"),
+	}
+
+	g.lines(0, h-len(text)-1, text, st)
+}
+
+func (g *Game) drawPlayers() {
+	for _, p := range g.players.GetAll() {
+		g.drawPlayer(*p)
 	}
 }
 
@@ -59,7 +106,7 @@ func (g *Game) drawScores() {
 	// temporary copy-pasted color
 	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
 
-	for _, p := range g.players.Arrayify() {
+	for _, p := range g.players.GetAll() {
 		// set the middle point of the letter
 		mid := w / 4
 
@@ -113,5 +160,19 @@ func (g *Game) rect(x1 int, x2 int, y1 int, y2 int, mainc rune, style tcell.Styl
 			// combc is in most cases nil
 			g.screen.SetContent(i, j, mainc, nil, style)
 		}
+	}
+}
+
+// Draw multiple lines of text. Doesn't update the terminal
+func (g *Game) lines(x int, y int, lines [][]rune, st tcell.Style) {
+	for i, line := range lines {
+		g.text(x, y+i, line, st)
+	}
+}
+
+// Draw text in a straight line. Doesn't update the terminal
+func (g *Game) text(x int, y int, chars []rune, st tcell.Style) {
+	for i, char := range chars {
+		g.screen.SetContent(x+i, y, char, nil, st)
 	}
 }
