@@ -23,6 +23,10 @@ Alternative is to git clone this repo, cd into it and run:
 ```shell
 sudo go run .
 ```
+
+# Game Screenshot
+![Image Not Found](https://i.ibb.co/rvmNys6/game.jpg)
+
 # Controls
 |  Key  |     Action    |
 |:-----:|:-------------:|
