@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/spinzed/tpong/game"
 )
 
@@ -11,8 +13,7 @@ func main() {
 	err := g.Init()
 
 	if err != nil {
-		g.End()
-		panic(err)
+		log.Fatal(err)
 	}
 
 	g.Loop()

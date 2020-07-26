@@ -56,8 +56,13 @@ func initScreen() (tcell.Screen, error) {
 
 // Initialize the game. Must be called on new game instance
 func (g *Game) Init() error {
-	// This is a workaround since g.screen.Fini is broken. Save terminal old state
-	// before making it raw for tcell to use
+	var err error
+
+	defer func() {
+		if err != nil {
+			g.End()
+		}
+	}()
 
 	// keyboard init
 	k, err := newKeyboard()
@@ -208,7 +213,12 @@ func (g *Game) togglePause() {
 func (g *Game) End() {
 	// g.screen.Fini() is fixed, but a leftover "q" is left when terminal is closed.
 	// looking for fix
-	g.screen.Fini()
+	// check for nil is required in case the game ends with an error and g.screen is not set,
+	// in that case it would panic with nil pointer dereference. If it doesnt exist,
+	// then there is no need to clean it up.
+	if g.screen != nil {
+		g.screen.Fini()
+	}
 }
 
 // Move player 1 char higher. If player is at the edge, do nothing.
