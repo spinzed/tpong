@@ -2,7 +2,8 @@
 The old school Atari Pong game remade in terminal with Golang.  
 
 # General Info
-The game currently works **only for Linux systems** due to platform-dependent key detection.  
+For best experience, make your terminal fullscreen or zoom out.  
+The game currently works **only on Linux systems** due to platform-dependent key detection.  
 For a similar reason, this game **must be run with superuser privileges**.  
 
 To interact with terminal, the [tcell](https://github.com/gdamore/tcell) package API is used.  

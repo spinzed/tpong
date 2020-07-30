@@ -7,15 +7,6 @@ import (
 	"github.com/gdamore/tcell"
 )
 
-type Players struct {
-	P1 *Player
-	P2 *Player
-}
-
-func (p *Players) GetAll() []*Player {
-	return []*Player{p.P1, p.P2}
-}
-
 type Game struct {
 	screen     tcell.Screen
 	players    *Players
@@ -28,6 +19,15 @@ type Game struct {
 	started    bool
 	paused     bool
 	hardPaused bool
+}
+
+type Players struct {
+	P1 *Player
+	P2 *Player
+}
+
+func (p *Players) GetAll() []*Player {
+	return []*Player{p.P1, p.P2}
 }
 
 // Get a pair of players ready and initialised
@@ -82,24 +82,18 @@ func (g *Game) Init() error {
 
 	g.screen = s
 
-	// players init
+	// game asset init
 	w, h := g.screen.Size()
 	g.players = newPlayers(w, h, padding)
-
-	// ball init
 	g.ball = newBall((w-ballDiam)/2, 0, ballDiam, 1, 1)
 
-	// keys map init
-	keys := make([]string, 0)
+	// keyboard channels and key state init
+	var keys []string
 	g.keys = &keys
-
-	// event channel init
 	g.event = make(chan keyState)
-
-	// dispEvent channel init
 	g.dispEvent = make(chan keyState)
 
-	// ticker init
+	// ticker init according to framerate variable
 	g.ticker = time.NewTicker(1000000 / framerate * time.Microsecond)
 
 	// signal that everything is ok
@@ -108,7 +102,7 @@ func (g *Game) Init() error {
 
 // Start the game. Must be called after initialization
 func (g *Game) Loop() {
-	// make sure than end cleanup function is executed
+	// make sure that end cleanup function is executed
 	defer g.End()
 
 	// polling events from terminal has been substituted for listening for events from
@@ -136,10 +130,10 @@ func (g *Game) Loop() {
 		select {
 		case <-g.ticker.C:
 			// perform 1 game tick
-			g.Tick(g.keys)
+			g.Tick()
 		case lol := <-g.event:
 			// filter the slice from the key if it is in there
-			newKeys := make([]string, 0)
+			var newKeys []string
 
 			for _, key := range *g.keys {
 				if lol.Name != key {
@@ -209,7 +203,7 @@ func (g *Game) togglePause() {
 	}
 }
 
-// End the game
+// End the game. Must be called when game ends or if g.Init fails for cleanup.
 func (g *Game) End() {
 	// g.screen.Fini() is fixed, but a leftover "q" is left when terminal is closed.
 	// looking for fix

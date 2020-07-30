@@ -1,6 +1,9 @@
 package game
 
-import "math/rand"
+import (
+	"math/rand"
+	"time"
+)
 
 type Ball struct {
 	x        int
@@ -48,13 +51,15 @@ func (b *Ball) SwitchY() {
 func (b *Ball) Reset() {
 	// add some randomness to the start position
 	// must be even otherwise the ball may noclip
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
 	rnd := (rand.Intn(9) - 4) * 2
 
 	b.x = b.initx + rnd
 	b.y = b.inity
 
 	// if ball is more to the left, it will go right and the other way
-	if rnd * b.velx > 0 {
+	if rnd*b.velx > 0 {
 		b.SwitchX()
 	}
 

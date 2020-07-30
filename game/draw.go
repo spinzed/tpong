@@ -25,15 +25,15 @@ func (g *Game) drawStartText() {
 	// temporary copy-pasted color
 	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
 
-	text := [][]rune{
-		[]rune("  Space  - Start Game"),
-		[]rune("    P    - Pause Game"),
-		[]rune("    R    - Restart Round"),
-		[]rune("    Q    - Quit"),
-		[]rune(" = P1 ="),
-		[]rune("    W    - Move Up,     S     - Move Down"),
-		[]rune(" = P2 ="),
-		[]rune(" ArrowUp - Move Up, ArrowDown - Move Down"),
+	text := []string{
+		"  Space  - Start Game",
+		"    P    - Pause Game",
+		"    R    - Restart Round",
+		"    Q    - Quit",
+		" = P1 =",
+		"    W    - Move Up,     S     - Move Down",
+		" = P2 =",
+		" ArrowUp - Move Up, ArrowDown - Move Down",
 	}
 
 	g.lines(0, h-len(text)-1, text, st)
@@ -45,15 +45,15 @@ func (g *Game) drawPauseText() {
 	// temporary copy-pasted color
 	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
 
-	text := [][]rune{
-		[]rune(" == PAUSE =="),
-		[]rune("    P    - Unpause Game"),
-		[]rune("    R    - Restart Round"),
-		[]rune("    Q    - Quit"),
-		[]rune(" = P1 ="),
-		[]rune("   W     - Move Up,     S     - Move Down"),
-		[]rune(" = P2 ="),
-		[]rune(" ArrowUp - Move Up, ArrowDown - Move Down"),
+	text := []string{
+		" == PAUSE ==",
+		"    P    - Unpause Game",
+		"    R    - Restart Round",
+		"    Q    - Quit",
+		" = P1 =",
+		"   W     - Move Up,     S     - Move Down",
+		" = P2 =",
+		" ArrowUp - Move Up, ArrowDown - Move Down",
 	}
 
 	g.lines(0, h-len(text)-1, text, st)
@@ -164,14 +164,14 @@ func (g *Game) rect(x1 int, x2 int, y1 int, y2 int, mainc rune, style tcell.Styl
 }
 
 // Draw multiple lines of text. Doesn't update the terminal
-func (g *Game) lines(x int, y int, lines [][]rune, st tcell.Style) {
+func (g *Game) lines(x int, y int, lines []string, st tcell.Style) {
 	for i, line := range lines {
 		g.text(x, y+i, line, st)
 	}
 }
 
 // Draw text in a straight line. Doesn't update the terminal
-func (g *Game) text(x int, y int, chars []rune, st tcell.Style) {
+func (g *Game) text(x int, y int, chars string, st tcell.Style) {
 	for i, char := range chars {
 		g.screen.SetContent(x+i, y, char, nil, st)
 	}

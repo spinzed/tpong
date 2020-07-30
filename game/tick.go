@@ -1,6 +1,6 @@
 package game
 
-func (g *Game) Tick(keys *[]string) {
+func (g *Game) Tick() {
 	// update the game state every tick.
 
 	if !g.started || g.paused || g.hardPaused {
@@ -8,7 +8,7 @@ func (g *Game) Tick(keys *[]string) {
 	}
 
 	// keys that don't persist when game is paused
-	for _, key := range *keys {
+	for _, key := range *g.keys {
 		switch key {
 		case eventP1Up:
 			g.movePlayerUp(g.players.P1)
