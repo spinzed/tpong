@@ -10,6 +10,8 @@ const (
 	eventStart       = "eventStart"
 	eventDestroy     = "eventDestroy"
 	eventReset       = "eventReset"
+	eventSwitchTheme = "eventSwitchTheme"
+	eventToggleBg    = "eventToggleBg"
 	playerP1         = "p1"
 	playerP2         = "p2"
 	ballDiam         = 1

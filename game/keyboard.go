@@ -72,10 +72,12 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 	// for these events, only one event is dispatched - up or down
 	// after event is dispached, an action is immediately called
 	dispEvents := map[string]keyState{
+		"SPACE": {eventStart, true},
 		"Q":     {eventDestroy, true},
 		"P":     {eventTogglePause, true},
 		"R":     {eventReset, true},
-		"SPACE": {eventStart, true},
+		"T":     {eventSwitchTheme, true},
+		"B":     {eventToggleBg, true},
 	}
 
 	for {

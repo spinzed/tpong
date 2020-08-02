@@ -7,11 +7,51 @@ import (
 	"github.com/gdamore/tcell"
 )
 
+// Draws the gui the updates the terminal.
+func (g *Game) drawInTerminal() {
+	g.screen.Clear()
+	g.drawGUI()
+	g.screen.Show()
+}
+
+// Draws all gui. Doesn't update the terminal
+func (g *Game) drawGUI() {
+	if g.theme.IsBgShown() {
+		g.drawBackground()
+	}
+
+	g.drawOverlay()
+
+	if g.started {
+		g.drawScores()
+	}
+
+	g.drawPlatforms()
+
+	if g.started {
+		g.drawBall()
+	}
+	if g.paused {
+		g.drawPauseText()
+	}
+	if !g.started {
+		g.drawStartText()
+	}
+}
+
+// Draw background. Doesn't update the terminal.
+func (g *Game) drawBackground() {
+	w, h := g.screen.Size()
+
+	st := g.theme.GetCurrent().GetBackgroundStyle()
+
+	g.rect(0, w, 0, h, ' ', st)
+}
+
 func (g *Game) drawOverlay() {
 	w, h := g.screen.Size()
 
-	// temporary copy-pasted color
-	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
+	st := g.theme.GetCurrent().GetOverlayStyle()
 
 	// dashed line in the middle
 	for i := 2; i < h; i += 4 {
@@ -22,13 +62,12 @@ func (g *Game) drawOverlay() {
 func (g *Game) drawStartText() {
 	_, h := g.screen.Size()
 
-	// temporary copy-pasted color
-	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
-
 	text := []string{
 		"  Space  - Start Game",
 		"    P    - Pause Game",
 		"    R    - Restart Round",
+		"    T    - Switch Theme",
+		"    B    - Toggle Background",
 		"    Q    - Quit",
 		" = P1 =",
 		"    W    - Move Up,     S     - Move Down",
@@ -36,61 +75,59 @@ func (g *Game) drawStartText() {
 		" ArrowUp - Move Up, ArrowDown - Move Down",
 	}
 
-	g.lines(0, h-len(text)-1, text, st)
+	g.lines(0, h-len(text)-1, text)
 }
 
 func (g *Game) drawPauseText() {
 	_, h := g.screen.Size()
 
-	// temporary copy-pasted color
-	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
-
 	text := []string{
 		" == PAUSE ==",
 		"    P    - Unpause Game",
 		"    R    - Restart Round",
+		"    T    - Switch Theme",
+		"    B    - Toggle Background",
 		"    Q    - Quit",
 		" = P1 =",
-		"   W     - Move Up,     S     - Move Down",
+		"    W    - Move Up,     S     - Move Down",
 		" = P2 =",
 		" ArrowUp - Move Up, ArrowDown - Move Down",
 	}
 
-	g.lines(0, h-len(text)-1, text, st)
+	g.lines(0, h-len(text)-1, text)
 }
 
-func (g *Game) drawPlayers() {
+// Draw every player. Doesn't update the terminal.
+func (g *Game) drawPlatforms() {
 	for _, p := range g.players.GetAll() {
-		g.drawPlayer(*p)
+		g.drawPlatform(*p)
 	}
 }
 
 // Draw specified player. Doesn't update the terminal
-func (g *Game) drawPlayer(p Player) {
+func (g *Game) drawPlatform(p Player) {
 	pad, _ := p.Coords()
 
 	_, yPos := p.Coords()
 
-	// temporary copy-pasted color
-	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
+	st := g.theme.GetCurrent().GetPlatformStyle()
 
 	g.rect(pad, pad+p.GetWidth(), yPos, yPos+p.GetHeight(), ' ', st)
 }
 
-// Draws the ball. Doesn't update the terminal
+// Draw the ball. Doesn't update the terminal
 func (g *Game) drawBall() {
 	x, y := g.ball.Coords()
 	d := g.ball.Diam()
 
-	// temporary copy-pasted color
-	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
+	st := g.theme.GetCurrent().GetBallStyle()
 
 	// reason why x2 is x+2*d is because in terminal, height is 2x width so
 	// this needed to be done for compensation of width
 	g.rect(x, x+2*d, y, y+d, ' ', st)
 }
 
-// Draws 7-segment-like scores on the top of the screen.
+// Draw 7-segment-like scores on the top of the screen. Doesn't update the terminal.
 // This looks ugly af. I may refractor it somehow later.
 func (g *Game) drawScores() {
 	w, h := g.screen.Size()
@@ -103,8 +140,7 @@ func (g *Game) drawScores() {
 		padY = 1
 	}
 
-	// temporary copy-pasted color
-	st := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorWhite)
+	st := g.theme.GetCurrent().GetOverlayStyle()
 
 	for _, p := range g.players.GetAll() {
 		// set the middle point of the letter
@@ -164,7 +200,9 @@ func (g *Game) rect(x1 int, x2 int, y1 int, y2 int, mainc rune, style tcell.Styl
 }
 
 // Draw multiple lines of text. Doesn't update the terminal
-func (g *Game) lines(x int, y int, lines []string, st tcell.Style) {
+func (g *Game) lines(x int, y int, lines []string) {
+	st := g.theme.GetCurrent().GetTextStyle()
+
 	for i, line := range lines {
 		g.text(x, y+i, line, st)
 	}

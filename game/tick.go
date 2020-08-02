@@ -21,21 +21,14 @@ func (g *Game) Tick() {
 		}
 	}
 
-	// update the screen.
-	// these aren't expensive since they just check for changes on the canvas
-	// and if there aren't any, nothing will be updated therefore no bloat
-	g.screen.Clear()
-
-	g.drawScores()
-	g.drawOverlay()
-	g.drawPlayers()
-
 	// first start is for initial delay
 	// move the ball for 1 tick
 	g.ball.Move()
 	g.checkCollision()
-	g.drawBall()
 
-	// at last, update the terminal
-	g.screen.Show()
+	// update the screen.
+	// this isn't expensive since it just checks for changes on the canvas
+	// and if there aren't any, nothing will be updated therefore no bloat.
+	// the terminal is updated after everything has been drawn.
+	g.drawInTerminal()
 }

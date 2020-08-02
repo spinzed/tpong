@@ -29,16 +29,18 @@ sudo go run .
 ![Image Not Found](https://i.ibb.co/rvmNys6/game.jpg)
 
 # Controls
-|  Key  |     Action    |
-|:-----:|:-------------:|
-|   W   |   Player1 Up  |
-|   S   |  Player1 Down |
-|   ↑   |   Player2 Up  |
-|   ↓   |  Player2 Down |
-| Space |     Start     |
-|   Q   |      Quit     |
-|   P   |  Toggle Pause |
-|   R   | Restart Round |
+|  Key  |       Action      |
+|:-----:|:-----------------:|
+|   W   |     Player1 Up    |
+|   S   |    Player1 Down   |
+|   ↑   |     Player2 Up    |
+|   ↓   |    Player2 Down   |
+| Space |       Start       |
+|   Q   |        Quit       |
+|   P   |    Toggle Pause   |
+|   R   |   Restart Round   |
+|   T   |    Switch Theme   |
+|   B   | Toggle Background |
 
 # Further Plans & Todos
 Eventually, this project may be expanded:

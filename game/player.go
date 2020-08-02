@@ -53,3 +53,22 @@ func (p *Player) Reset() {
 	p.ypos = p.initx
 	p.ypos = p.inity
 }
+
+// Players struct includes both players individually and a method that returns them both
+type Players struct {
+	P1 *Player
+	P2 *Player
+}
+
+func (p *Players) GetAll() []*Player {
+	return []*Player{p.P1, p.P2}
+}
+
+// Get a pair of players ready and initialised
+func newPlayers(w int, h int, padding int) *Players {
+	initialPos := (h - platformHeight) / 2
+	p1 := newPlayer(playerP1, initialPos, padding)
+	p2 := newPlayer(playerP2, initialPos, w-padding)
+
+	return &Players{p1, p2}
+}

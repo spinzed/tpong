@@ -16,27 +16,10 @@ type Game struct {
 	dispEvent  chan keyState
 	ticker     *time.Ticker
 	keyboard   []*keylogger.KeyLogger
+	theme      *ThemeHandler
 	started    bool
 	paused     bool
 	hardPaused bool
-}
-
-type Players struct {
-	P1 *Player
-	P2 *Player
-}
-
-func (p *Players) GetAll() []*Player {
-	return []*Player{p.P1, p.P2}
-}
-
-// Get a pair of players ready and initialised
-func newPlayers(w int, h int, padding int) *Players {
-	initialPos := (h - platformHeight) / 2
-	p1 := newPlayer(playerP1, initialPos, padding)
-	p2 := newPlayer(playerP2, initialPos, w-padding)
-
-	return &Players{p1, p2}
 }
 
 // Create screen ready to use
@@ -96,6 +79,9 @@ func (g *Game) Init() error {
 	// ticker init according to framerate variable
 	g.ticker = time.NewTicker(1000000 / framerate * time.Microsecond)
 
+	// initialise default theme
+	g.theme = newThemeHandler()
+
 	// signal that everything is ok
 	return nil
 }
@@ -121,10 +107,7 @@ func (g *Game) Loop() {
 	}
 
 	// initial screen overlay
-	g.drawOverlay()
-	g.drawPlayers()
-	g.drawStartText()
-	g.screen.Show()
+	g.drawInTerminal()
 
 	for {
 		select {
@@ -158,6 +141,10 @@ func (g *Game) Loop() {
 				g.togglePause()
 			case eventReset:
 				g.Reset()
+			case eventSwitchTheme:
+				g.switchTheme()
+			case eventToggleBg:
+				g.toggleBackground()
 			}
 		}
 	}
@@ -176,17 +163,7 @@ func (g *Game) Reset() {
 		p.Reset()
 	}
 
-	g.screen.Clear()
-
-	g.drawScores()
-	g.drawOverlay()
-	g.drawPlayers()
-
-	if g.paused {
-		g.drawPauseText()
-	}
-
-	g.screen.Show()
+	g.drawInTerminal()
 }
 
 // Toggle pause
@@ -201,6 +178,18 @@ func (g *Game) togglePause() {
 		g.drawPauseText()
 		g.screen.Show()
 	}
+}
+
+// Switch next theme and update the terminal
+func (g *Game) switchTheme() {
+	g.theme.Switch()
+	g.drawInTerminal()
+}
+
+// Toggle background on/off and update the terminal
+func (g *Game) toggleBackground() {
+	g.theme.ToggleBg()
+	g.drawInTerminal()
 }
 
 // End the game. Must be called when game ends or if g.Init fails for cleanup.
