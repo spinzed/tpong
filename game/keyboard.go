@@ -77,7 +77,7 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 		"P":     {eventTogglePause, true},
 		"R":     {eventReset, true},
 		"T":     {eventSwitchTheme, true},
-		"B":     {eventToggleBg, true},
+//		"B":     {eventToggleBg, true},
 	}
 
 	for {

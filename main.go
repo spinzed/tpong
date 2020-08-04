@@ -2,15 +2,22 @@ package main
 
 import (
 	"log"
+	"os"
 
+	"github.com/spinzed/tpong/argparse"
 	"github.com/spinzed/tpong/game"
 )
 
 func main() {
+	options, err := argparse.Parse(os.Args)
 
-	g := game.Game{}
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	err := g.Init()
+	castedOptns := game.GameSettings(*options)
+
+	g, err := game.Create(&castedOptns)
 
 	if err != nil {
 		log.Fatal(err)

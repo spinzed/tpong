@@ -46,8 +46,8 @@ type ThemeHandler struct {
 	background   bool
 }
 
-func newThemeHandler() *ThemeHandler {
-	return &ThemeHandler{allThemes, 0, true}
+func newThemeHandler(initialBg bool) *ThemeHandler {
+	return &ThemeHandler{allThemes, 0, initialBg}
 }
 
 func (t *ThemeHandler) GetCurrent() *Theme {

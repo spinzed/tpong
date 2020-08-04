@@ -22,6 +22,21 @@ type Game struct {
 	hardPaused bool
 }
 
+type GameSettings struct {
+	BgHidden bool
+}
+
+// Create a new game instance initialised and ready to go
+func Create(options *GameSettings) (*Game, error) {
+	g := Game{}
+
+	if err := g.Init(options); err != nil {
+		return nil, err
+	}
+
+	return &g, nil
+}
+
 // Create screen ready to use
 func initScreen() (tcell.Screen, error) {
 	s, err := tcell.NewScreen()
@@ -38,7 +53,7 @@ func initScreen() (tcell.Screen, error) {
 }
 
 // Initialize the game. Must be called on new game instance
-func (g *Game) Init() error {
+func (g *Game) Init(optns *GameSettings) error {
 	var err error
 
 	defer func() {
@@ -80,7 +95,7 @@ func (g *Game) Init() error {
 	g.ticker = time.NewTicker(1000000 / framerate * time.Microsecond)
 
 	// initialise default theme
-	g.theme = newThemeHandler()
+	g.theme = newThemeHandler(!optns.BgHidden)
 
 	// signal that everything is ok
 	return nil
