@@ -81,20 +81,86 @@ func (g *Game) drawStartText() {
 func (g *Game) drawPauseText() {
 	_, h := g.screen.Size()
 
-	text := []string{
-		" == PAUSE ==",
-		"    P    - Unpause Game",
-		"    R    - Restart Round",
-		"    T    - Switch Theme",
-		"    B    - Toggle Background",
-		"    Q    - Quit",
-		" = P1 =",
-		"    W    - Move Up,     S     - Move Down",
-		" = P2 =",
-		" ArrowUp - Move Up, ArrowDown - Move Down",
+	text := formatKeys([]string{
+		eventTogglePause,
+		eventReset,
+		eventSwitchTheme,
+		eventDestroy,
+		eventP1Up,
+		eventP1Down,
+		eventP2Up,
+		eventP2Down,
+	})
+
+	finalText := append([]string{" == PAUSE =="}, text...)
+
+	g.lines(0, h-len(finalText)-1, finalText)
+}
+
+func formatKeys(eventNames []string) []string {
+	var keys []string
+	var descs []string
+
+	var maxKeylen int
+
+	alternate := map[string]string{
+		"Up":   "ArrowUp",
+		"Down": "ArrowDown",
 	}
 
-	g.lines(0, h-len(text)-1, text)
+	for _, eventName := range eventNames {
+		for key, event := range events {
+			if event.Name == eventName {
+				var realKey string
+
+				if alternate[key] != "" {
+					realKey = alternate[key]
+				} else {
+					realKey = key
+				}
+				keys = append(keys, realKey)
+				descs = append(descs, event.Description)
+
+				if len(key) > maxKeylen {
+					maxKeylen = len(realKey)
+				}
+			}
+		}
+		for key, event := range dispEvents {
+			if event.Name == eventName {
+				var realKey string
+
+				if alternate[key] != "" {
+					realKey = alternate[key]
+				} else {
+					realKey = key
+				}
+				keys = append(keys, realKey)
+				descs = append(descs, event.Description)
+
+				if len(key) > maxKeylen {
+					maxKeylen = len(realKey)
+				}
+			}
+		}
+	}
+
+	maxKeylen += 2
+
+	var final []string
+
+	for i, key := range keys {
+		desc := descs[i]
+
+		thstring := strings.Repeat(" ", (maxKeylen-len(key))/2)
+		thstring += key
+		thstring += strings.Repeat(" ", maxKeylen-len(key)-((maxKeylen-len(key))/2))
+		thstring += "- " + desc
+
+		final = append(final, thstring)
+	}
+
+	return final
 }
 
 // Draw every player. Doesn't update the terminal.

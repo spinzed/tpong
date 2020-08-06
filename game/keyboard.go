@@ -46,12 +46,8 @@ type keyState struct {
 	Down bool
 }
 
-func getEvent(m *map[string]string, k string) string {
-	return (*m)[k]
-}
-
-// fucking hell Go when will you have generics
-func getDispEvent(m *map[string]keyState, k string) keyState {
+func getEvent(m *map[string]Event, k string) Event {
+	// this will be expanded in the future
 	return (*m)[k]
 }
 
@@ -59,26 +55,6 @@ func getDispEvent(m *map[string]keyState, k string) keyState {
 // It will block so it must be called in a separate goroutine
 func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 	kch := k.Read()
-
-	// for these, press and release events are dispatched
-	// an action is happening between 2 dispatched of this event (up and down dispatch)
-	events := map[string]string{
-		"W":    eventP1Up,
-		"S":    eventP1Down,
-		"Up":   eventP2Up,
-		"Down": eventP2Down,
-	}
-
-	// for these events, only one event is dispatched - up or down
-	// after event is dispached, an action is immediately called
-	dispEvents := map[string]keyState{
-		"SPACE": {eventStart, true},
-		"Q":     {eventDestroy, true},
-		"P":     {eventTogglePause, true},
-		"R":     {eventReset, true},
-		"T":     {eventSwitchTheme, true},
-//		"B":     {eventToggleBg, true},
-	}
 
 	for {
 		select {
@@ -88,22 +64,18 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 				// there are separate checks for KeyPress and KeyRelease because
 				// it can happen that a key is held down continuously, in that case
 				// both methods return false
-				if ev := getEvent(&events, e.KeyString()); ev != "" {
+				if ev := getEvent(&events, e.KeyString()); ev.Name != "" {
 					if e.KeyPress() {
-						c <- keyState{ev, true}
+						c <- keyState{ev.Name, true}
 					}
 
 					if e.KeyRelease() {
-						c <- keyState{ev, false}
+						c <- keyState{ev.Name, false}
 					}
 				}
-				if ev := getDispEvent(&dispEvents, e.KeyString()); ev != (keyState{}) {
-					if e.KeyPress() && ev.Down {
-						dc <- ev
-					}
-
-					if e.KeyRelease() && !ev.Down {
-						dc <- ev
+				if ev := getEvent(&dispEvents, e.KeyString()); ev.Name != "" {
+					if e.KeyPress() {
+						dc <- keyState{ev.Name, true}
 					}
 				}
 			}

@@ -130,7 +130,7 @@ func (g *Game) Loop() {
 			// perform 1 game tick
 			g.Tick()
 		case lol := <-g.event:
-			// filter the slice from the key if it is in there
+			// filter the key from the slice if it is in there
 			var newKeys []string
 
 			for _, key := range *g.keys {
