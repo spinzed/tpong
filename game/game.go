@@ -122,13 +122,14 @@ func (g *Game) Loop() {
 	}
 
 	// initial screen overlay
-	g.drawInTerminal()
+	//g.drawGameTick()
 
 	for {
 		select {
 		case <-g.ticker.C:
-			// perform 1 game tick
-			g.Tick()
+			// draw the gui and update the terminal
+			g.drawGUI()
+			g.updateTerminal()
 		case lol := <-g.event:
 			// filter the key from the slice if it is in there
 			var newKeys []string
@@ -178,7 +179,7 @@ func (g *Game) Reset() {
 		p.Reset()
 	}
 
-	g.drawInTerminal()
+	g.drawGUI()
 }
 
 // Toggle pause
@@ -198,13 +199,13 @@ func (g *Game) togglePause() {
 // Switch next theme and update the terminal
 func (g *Game) switchTheme() {
 	g.theme.Switch()
-	g.drawInTerminal()
+	g.drawGUI()
 }
 
 // Toggle background on/off and update the terminal
 func (g *Game) toggleBackground() {
 	g.theme.ToggleBg()
-	g.drawInTerminal()
+	g.drawGUI()
 }
 
 // End the game. Must be called when game ends or if g.Init fails for cleanup.

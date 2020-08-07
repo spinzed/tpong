@@ -7,36 +7,48 @@ import (
 	"github.com/gdamore/tcell"
 )
 
-// Draws the gui the updates the terminal.
-func (g *Game) drawInTerminal() {
-	g.screen.Clear()
-	g.drawGUI()
+// Update the terinal.
+func (g *Game) updateTerminal() {
 	g.screen.Show()
 }
 
-// Draws all gui. Doesn't update the terminal
+// Draw the GUI aka the current screen. Doesn't update the terminal.
 func (g *Game) drawGUI() {
+	if g.started {
+		g.PerformGameTick()
+	} else {
+		g.PerformStartMenuTick()
+	}
+}
+
+// Draw the GUI for the current game tick. Doesn't update the terminal.
+func (g *Game) drawGameTick() {
 	if g.theme.IsBgShown() {
 		g.drawBackground()
 	}
+	g.screen.Clear()
 
 	g.drawOverlay()
-
-	if g.started {
-		g.drawScores()
-	}
-
+	g.drawScores()
 	g.drawPlatforms()
+	g.drawBall()
 
-	if g.started {
-		g.drawBall()
-	}
 	if g.paused {
 		g.drawPauseText()
 	}
-	if !g.started {
-		g.drawStartText()
-	}
+}
+
+// Draws the start menu. Doesn't update the terminal.
+func (g *Game) drawStartGameMenu() {
+	w, h := g.screen.Size()
+
+	g.screen.Clear()
+
+	text := "PONG"
+	st := g.theme.GetCurrent().GetOverlayStyle()
+	g.drawLetters(w/2, h/5*2, startMenuLttrGap, text, st)
+
+	g.drawStartText()
 }
 
 // Draw background. Doesn't update the terminal.
@@ -48,6 +60,8 @@ func (g *Game) drawBackground() {
 	g.rect(0, w, 0, h, ' ', st)
 }
 
+// Draw tghe overlay aka the dashed line. Doesn't update the terminal.
+// The score counter may also be added here in the future.
 func (g *Game) drawOverlay() {
 	w, h := g.screen.Size()
 
@@ -59,25 +73,25 @@ func (g *Game) drawOverlay() {
 	}
 }
 
+// Draws the text on the start menu.
 func (g *Game) drawStartText() {
-	_, h := g.screen.Size()
+	w, h := g.screen.Size()
 
-	text := []string{
-		"  Space  - Start Game",
-		"    P    - Pause Game",
-		"    R    - Restart Round",
-		"    T    - Switch Theme",
-		"    B    - Toggle Background",
-		"    Q    - Quit",
-		" = P1 =",
-		"    W    - Move Up,     S     - Move Down",
-		" = P2 =",
-		" ArrowUp - Move Up, ArrowDown - Move Down",
-	}
+	text := formatKeys([]string{
+		eventTogglePause,
+		eventReset,
+		eventSwitchTheme,
+		eventDestroy,
+		eventP1Up,
+		eventP1Down,
+		eventP2Up,
+		eventP2Down,
+	}, "equal")
 
-	g.lines(0, h-len(text)-1, text)
+	g.lines(w/2, h-len(text)-1, text, "mid")
 }
 
+// Draws the text on the pause menu. Doesn't update the terminal.
 func (g *Game) drawPauseText() {
 	_, h := g.screen.Size()
 
@@ -90,73 +104,71 @@ func (g *Game) drawPauseText() {
 		eventP1Down,
 		eventP2Up,
 		eventP2Down,
-	})
+	}, "distance")
 
-	finalText := append([]string{" == PAUSE =="}, text...)
+	finalText := append([]string{" == PAUSE == "}, text...)
 
-	g.lines(0, h-len(finalText)-1, finalText)
+	g.lines(0, h-len(finalText)-1, finalText, "left")
 }
 
-func formatKeys(eventNames []string) []string {
+// Fetches the keys and event descriptions and formats them.
+// Mode dictates should keys be format for left or middle.
+// May be moved to another file in the future.
+func formatKeys(eventNames []string, mode string) []string {
+	if mode != "equal" && mode != "distance" {
+		panic("Invalid format mode:" + mode)
+	}
+
 	var keys []string
 	var descs []string
 
 	var maxKeylen int
 
+	// switch default key names with these
 	alternate := map[string]string{
 		"Up":   "ArrowUp",
 		"Down": "ArrowDown",
 	}
 
+	// cycle all event names and get their keys and descs
 	for _, eventName := range eventNames {
-		for key, event := range events {
-			if event.Name == eventName {
-				var realKey string
+		if event, key := getEventByName(eventName); event != nil {
+			var realKey string
 
-				if alternate[key] != "" {
-					realKey = alternate[key]
-				} else {
-					realKey = key
-				}
-				keys = append(keys, realKey)
-				descs = append(descs, event.Description)
-
-				if len(key) > maxKeylen {
-					maxKeylen = len(realKey)
-				}
+			if alternate[key] != "" {
+				realKey = alternate[key]
+			} else {
+				realKey = key
 			}
-		}
-		for key, event := range dispEvents {
-			if event.Name == eventName {
-				var realKey string
+			keys = append(keys, realKey)
+			descs = append(descs, event.Description)
 
-				if alternate[key] != "" {
-					realKey = alternate[key]
-				} else {
-					realKey = key
-				}
-				keys = append(keys, realKey)
-				descs = append(descs, event.Description)
-
-				if len(key) > maxKeylen {
-					maxKeylen = len(realKey)
-				}
+			if len(key) > maxKeylen {
+				maxKeylen = len(realKey)
 			}
 		}
 	}
 
-	maxKeylen += 2
+	maxKeylen += 4
 
 	var final []string
 
+	// format every line and append it to the final line list
 	for i, key := range keys {
 		desc := descs[i]
+		var thstring string
 
-		thstring := strings.Repeat(" ", (maxKeylen-len(key))/2)
-		thstring += key
-		thstring += strings.Repeat(" ", maxKeylen-len(key)-((maxKeylen-len(key))/2))
-		thstring += "- " + desc
-
+		if mode == "distance" {
+			thstring += strings.Repeat(" ", (maxKeylen-len(key))/2)
+			thstring += key
+			thstring += strings.Repeat(" ", maxKeylen-len(key)-((maxKeylen-len(key))/2))
+			thstring += "- " + desc + " "
+		} else {
+			thstring += "  " + key + " - " + desc + " "
+			if len(thstring) % 2 == 1 {
+				thstring += " "
+			}
+		}
 		final = append(final, thstring)
 	}
 
@@ -170,18 +182,16 @@ func (g *Game) drawPlatforms() {
 	}
 }
 
-// Draw specified player. Doesn't update the terminal
+// Draw specified player. Doesn't update the terminal.
 func (g *Game) drawPlatform(p Player) {
 	pad, _ := p.Coords()
-
 	_, yPos := p.Coords()
 
 	st := g.theme.GetCurrent().GetPlatformStyle()
-
 	g.rect(pad, pad+p.GetWidth(), yPos, yPos+p.GetHeight(), ' ', st)
 }
 
-// Draw the ball. Doesn't update the terminal
+// Draw the ball. Doesn't update the terminal.
 func (g *Game) drawBall() {
 	x, y := g.ball.Coords()
 	d := g.ball.Diam()
@@ -199,63 +209,49 @@ func (g *Game) drawScores() {
 	w, h := g.screen.Size()
 
 	// set the top padding
-	padY := h/10 - letterHeight/2
+	padY := h / 10
 
 	// this makes sure that padding isn't smaller than one
-	if padY < 1 {
-		padY = 1
+	if padY < letterHeight/2 {
+		padY = letterHeight / 2
 	}
 
 	st := g.theme.GetCurrent().GetOverlayStyle()
 
 	for _, p := range g.players.GetAll() {
 		// set the middle point of the letter
-		mid := w / 4
+		padX := w / 4
 
 		if p.GetTag() == playerP2 {
-			mid *= 3
+			padX *= 3
 		}
 
-		// get the score and parse it in slice of string digits - 25 -> { "2", "5" }
-		score := p.GetScore()
-		parsedNums := strings.Split(strconv.Itoa(score), "")
+		g.drawLetters(padX, padY, letterGap, strconv.Itoa(p.GetScore()), st)
+	}
+}
 
-		// get the total length of all letters with spacing
-		totalXLen := len(parsedNums)*letterWidth + (len(parsedNums)-1)*letterSpacing
+// Draw big letters with the given center.
+func (g *Game) drawLetters(x int, y int, gap int, word string, st tcell.Style) {
+	letterNum := len(word)
+	totalLen := letterNum*letterWidth + (letterNum-1)*gap
+	startx := x - totalLen/2
+	offsety := y - letterHeight/2
 
-		// starting point - subtract half of the full length of all letters
-		start := mid - totalXLen/2
+	for i, letter := range word {
+		letterCells := getCellsFromChar(string(letter))
+		offsetx := startx + totalLen/letterNum*i
 
-		for i, strchar := range parsedNums {
-			// current letter x offset
-			xOffset := start + totalXLen/len(parsedNums)*i
+		offsetx += (i - 1) * gap
 
-			// add between-letter spacing if necessary
-			if i != 0 && i < len(parsedNums) {
-				xOffset += i * letterSpacing
-			}
-
-			// cast the string-char back to int
-			parsedNum, err := strconv.Atoi(strchar)
-
-			if err != nil {
-				panic(err)
-			}
-
-			// get cells for that number
-			readyNum := getCellsFromNum(parsedNum)
-
-			// draw each number cell
-			for _, char := range readyNum {
-				x := xOffset + int(char[0])
-				y := padY + int(char[1])
-				g.screen.SetContent(x, y, ' ', nil, st)
-			}
+		for _, cell := range letterCells {
+			finalx := offsetx + int(cell[0])
+			finaly := offsety + int(cell[1])
+			g.screen.SetContent(finalx, finaly, ' ', nil, st)
 		}
 	}
 }
 
-// Draw a rectangle. Doesn't update the terminal
+// Draw a rectangle. Doesn't update the terminal.
 func (g *Game) rect(x1 int, x2 int, y1 int, y2 int, mainc rune, style tcell.Style) {
 	for i := x1; i < x2; i++ {
 		for j := y1; j < y2; j++ {
@@ -265,16 +261,26 @@ func (g *Game) rect(x1 int, x2 int, y1 int, y2 int, mainc rune, style tcell.Styl
 	}
 }
 
-// Draw multiple lines of text. Doesn't update the terminal
-func (g *Game) lines(x int, y int, lines []string) {
+// Draw multiple lines of text. Doesn't update the terminal.
+// Mode dictates should the lines be aligned to the left or centered
+func (g *Game) lines(x int, y int, lines []string, mode string) {
 	st := g.theme.GetCurrent().GetTextStyle()
 
+	if mode != "left" && mode != "mid" {
+		panic("Invalid line draw mode: " + mode)
+	}
+
 	for i, line := range lines {
-		g.text(x, y+i, line, st)
+		realx := x
+
+		if mode == "mid" {
+			realx -= len(line)/2
+		}
+		g.text(realx, y+i, line, st)
 	}
 }
 
-// Draw text in a straight line. Doesn't update the terminal
+// Draw text in a straight line. Doesn't update the terminal.
 func (g *Game) text(x int, y int, chars string, st tcell.Style) {
 	for i, char := range chars {
 		g.screen.SetContent(x+i, y, char, nil, st)

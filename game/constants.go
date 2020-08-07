@@ -20,7 +20,8 @@ const (
 	padding          = 10
 	letterWidth      = 8
 	letterHeight     = 7
-	letterSpacing    = 1
+	letterGap        = 1
 	initialDelaySecs = 2
 	scoreSleepSecs   = 2
+	startMenuLttrGap = 8
 )

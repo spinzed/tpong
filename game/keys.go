@@ -22,7 +22,7 @@ var events = map[string]Event{
 }
 
 // For these events, the event is immediately dispatched and
-// and the action is called immediately after.
+// which results in immediate action call.
 var dispEvents = map[string]Event{
 	"SPACE": newEvent(eventStart, "Start Game"),
 	"Q":     newEvent(eventDestroy, "Quit"),
@@ -30,4 +30,18 @@ var dispEvents = map[string]Event{
 	"R":     newEvent(eventReset, "Reset Round"),
 	"T":     newEvent(eventSwitchTheme, "Switch Theme"),
 	//		"B":     eventToggleBg,
+}
+
+func getEventByName(name string) (*Event, string) {
+	for key, event := range dispEvents {
+		if event.Name == name {
+			return &event, key
+		}
+	}
+	for key, event := range events {
+		if event.Name == name {
+			return &event, key
+		}
+	}
+	return &Event{}, ""
 }
