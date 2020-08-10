@@ -46,11 +46,6 @@ type keyState struct {
 	Down bool
 }
 
-func getEvent(m *map[string]Event, k string) Event {
-	// this will be expanded in the future
-	return (*m)[k]
-}
-
 // Listen for keyboard events and dispatch them through a channel.
 // It will block so it must be called in a separate goroutine
 func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
@@ -82,3 +77,9 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 		}
 	}
 }
+
+func getEvent(m *map[string]Event, k string) Event {
+	// this will be expanded in the future
+	return (*m)[k]
+}
+

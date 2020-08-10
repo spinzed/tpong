@@ -2,11 +2,21 @@ package game
 
 // Update the start menu state every tick
 func (g *Game) PerformStartMenuTick() {
+	g.ball.Move()
+	g.checkCollision(true)
+
 	g.drawStartGameMenu()
 }
 
 // Update the game state every tick.
 func (g *Game) PerformGameTick() {
+	// update the screen.
+	// this isn't expensive since it just checks for changes on the canvas
+	// and if there aren't any, nothing will be updated therefore no bloat.
+	// the terminal is updated after everything has been drawn.
+	// this should be called after every tick, thats why it's defered
+	defer g.drawGameTick()
+
 	if g.paused || g.hardPaused {
 		return
 	}
@@ -25,14 +35,7 @@ func (g *Game) PerformGameTick() {
 		}
 	}
 
-	// first start is for initial delay
 	// move the ball for 1 tick
 	g.ball.Move()
-	g.checkCollision()
-
-	// update the screen.
-	// this isn't expensive since it just checks for changes on the canvas
-	// and if there aren't any, nothing will be updated therefore no bloat.
-	// the terminal is updated after everything has been drawn.
-	g.drawGameTick()
+	g.checkCollision(false)
 }

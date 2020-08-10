@@ -23,10 +23,11 @@ func (g *Game) drawGUI() {
 
 // Draw the GUI for the current game tick. Doesn't update the terminal.
 func (g *Game) drawGameTick() {
+	g.screen.Clear()
+
 	if g.theme.IsBgShown() {
 		g.drawBackground()
 	}
-	g.screen.Clear()
 
 	g.drawOverlay()
 	g.drawScores()
@@ -43,6 +44,12 @@ func (g *Game) drawStartGameMenu() {
 	w, h := g.screen.Size()
 
 	g.screen.Clear()
+
+	if g.theme.IsBgShown() {
+		g.drawBackground()
+	}
+
+	g.drawBall()
 
 	text := "PONG"
 	st := g.theme.GetCurrent().GetOverlayStyle()
@@ -78,6 +85,7 @@ func (g *Game) drawStartText() {
 	w, h := g.screen.Size()
 
 	text := formatKeys([]string{
+		eventStart,
 		eventTogglePause,
 		eventReset,
 		eventSwitchTheme,
@@ -165,7 +173,7 @@ func formatKeys(eventNames []string, mode string) []string {
 			thstring += "- " + desc + " "
 		} else {
 			thstring += "  " + key + " - " + desc + " "
-			if len(thstring) % 2 == 1 {
+			if len(thstring)%2 == 1 {
 				thstring += " "
 			}
 		}
@@ -274,7 +282,7 @@ func (g *Game) lines(x int, y int, lines []string, mode string) {
 		realx := x
 
 		if mode == "mid" {
-			realx -= len(line)/2
+			realx -= len(line) / 2
 		}
 		g.text(realx, y+i, line, st)
 	}

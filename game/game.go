@@ -20,6 +20,7 @@ type Game struct {
 	started    bool
 	paused     bool
 	hardPaused bool
+	loopActive bool
 }
 
 type GameSettings struct {
@@ -97,6 +98,10 @@ func (g *Game) Init(optns *GameSettings) error {
 	// initialise default theme
 	g.theme = newThemeHandler(!optns.BgHidden)
 
+	// mark that the game loop active - g.Loop
+	// should be made to false to end the game
+	g.loopActive = true
+
 	// signal that everything is ok
 	return nil
 }
@@ -121,10 +126,7 @@ func (g *Game) Loop() {
 		go keyboardListen(kb, g.event, g.dispEvent)
 	}
 
-	// initial screen overlay
-	//g.drawGameTick()
-
-	for {
+	for g.loopActive {
 		select {
 		case <-g.ticker.C:
 			// draw the gui and update the terminal
@@ -148,26 +150,25 @@ func (g *Game) Loop() {
 			// update the old array
 			g.keys = &newKeys
 		case e := <-g.dispEvent:
-			switch e.Name {
-			case eventDestroy:
-				return
-			case eventStart:
-				g.Start()
-			case eventTogglePause:
-				g.togglePause()
-			case eventReset:
-				g.Reset()
-			case eventSwitchTheme:
-				g.switchTheme()
-			case eventToggleBg:
-				g.toggleBackground()
+			if g.started {
+				g.dispatchGameAction(e)
+			} else {
+				g.dispatchStartAction(e)
 			}
 		}
 	}
 }
 
+// Break the game loop. End cleanup function should invoke when the loop breaks
+func (g *Game) EndLoop() {
+	// reset the ball from the start menu
+	g.loopActive = false
+}
+
 // Start the game
 func (g *Game) Start() {
+	// reset the ball from the start menu
+	g.ball.Reset()
 	g.started = true
 }
 
@@ -244,36 +245,46 @@ func (g *Game) movePlayerDown(p *Player) {
 }
 
 // Check and handle collisions between balls, walls and platforms
-func (g *Game) checkCollision() {
+func (g *Game) checkCollision(ballBouncesSides bool) {
 	w, h := g.ball.Coords()
 	d := g.ball.Diam()
 	vx, vy := g.ball.Vels()
 	sw, sh := g.screen.Size()
 
-	// wall collisions
-	if w < 1 && vx < 0 {
-		g.players.P2.AddPoint()
+	// wall collisions. If ball side bouncing is enabled, bounce it,
+	// if it is not... do not bounce it
+	if ballBouncesSides {
+		if w < 1 && vx < 0 {
+			g.ball.SwitchX()
+		}
+		if w >= sw-2*d-1 && vx > 0 {
+			g.ball.SwitchX()
+		}
+	} else {
+		if w < 1 && vx < 0 {
+			g.players.P2.AddPoint()
 
-		// hardPause cannot be unpaused by player
-		g.hardPaused = true
+			// hardPause cannot be unpaused by player
+			g.hardPaused = true
 
-		go func() {
-			time.Sleep(scoreSleepSecs * time.Second)
-			g.hardPaused = false
-			g.Reset()
-		}()
-	}
-	if w >= sw-2*d-1 && vx > 0 {
-		g.players.P1.AddPoint()
+			go func() {
+				time.Sleep(scoreSleepSecs * time.Second)
+				g.hardPaused = false
+				g.Reset()
+			}()
+		}
+		if w >= sw-2*d-1 && vx > 0 {
+			g.players.P1.AddPoint()
 
-		// hardPause cannot be unpaused by player
-		g.hardPaused = true
+			// hardPause cannot be unpaused by player
+			g.hardPaused = true
 
-		go func() {
-			time.Sleep(scoreSleepSecs * time.Second)
-			g.hardPaused = false
-			g.Reset()
-		}()
+			go func() {
+				time.Sleep(scoreSleepSecs * time.Second)
+				g.hardPaused = false
+				g.Reset()
+			}()
+		}
 	}
 	if h <= 1 && vy < 0 {
 		g.ball.SwitchY()
@@ -283,13 +294,16 @@ func (g *Game) checkCollision() {
 	}
 
 	// platform collisions
-	p1w, p1h := g.players.P1.Coords()
-	p2w, p2h := g.players.P2.Coords()
+	if !ballBouncesSides {
+		p1w, p1h := g.players.P1.Coords()
+		p2w, p2h := g.players.P2.Coords()
 
-	if h+d > p1h && h < p1h+platformHeight && (p1w+platformWidth)/2+1 == w/2 {
-		g.ball.SwitchX()
+		if h+d > p1h && h < p1h+platformHeight && (p1w+platformWidth)/2+1 == w/2 {
+			g.ball.SwitchX()
+		}
+		if h+d > p2h && h < p2h+platformHeight && p2w/2+1 == w/2+d {
+			g.ball.SwitchX()
+		}
 	}
-	if h+d > p2h && h < p2h+platformHeight && p2w/2+1 == w/2+d {
-		g.ball.SwitchX()
-	}
+
 }

@@ -16,7 +16,12 @@ type Ball struct {
 }
 
 func newBall(x int, y int, d int, velx int, vely int) *Ball {
-	return &Ball{x, y, x, y, d, velx, vely}
+	ball := &Ball{x, y, x, y, d, velx, vely}
+
+	// add some randomness to the initial ball spawn
+	ball.Reset()
+
+	return ball
 }
 
 // Returns x and y coords of the upper left corner of the ball
@@ -53,7 +58,7 @@ func (b *Ball) Reset() {
 	// must be even otherwise the ball may noclip
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
-	rnd := (rand.Intn(9) - 4) * 2
+	rnd := (rand.Intn(2*ballRandomness+1) - ballRandomness) * 2
 
 	b.x = b.initx + rnd
 	b.y = b.inity

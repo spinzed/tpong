@@ -1,11 +1,11 @@
 package game
 
-// This file defines events that will be dispatched depending on
-// the key press and it's type.
+// This file defines what action should dispatch on every key and
+// events that will be dispatched depending on the state of the game
 
 // Struct event defines an event which can be triggered by a key
 type Event struct {
-	Name string
+	Name        string
 	Description string
 }
 
@@ -44,4 +44,34 @@ func getEventByName(name string) (*Event, string) {
 		}
 	}
 	return &Event{}, ""
+}
+
+// Actions that are dispatched when the player is in start menu
+func (g *Game) dispatchStartAction(e keyState) {
+	switch e.Name {
+	case eventDestroy:
+		g.EndLoop()
+	case eventStart:
+		g.Start()
+	case eventReset:
+		g.Reset()
+	case eventSwitchTheme:
+		g.switchTheme()
+	}
+}
+
+// Actions that are dispatched when game is started
+func (g *Game) dispatchGameAction(e keyState) {
+	switch e.Name {
+	case eventDestroy:
+		g.EndLoop()
+	case eventStart:
+		g.Start()
+	case eventTogglePause:
+		g.togglePause()
+	case eventReset:
+		g.Reset()
+	case eventSwitchTheme:
+		g.switchTheme()
+	}
 }

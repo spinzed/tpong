@@ -24,4 +24,5 @@ const (
 	initialDelaySecs = 2
 	scoreSleepSecs   = 2
 	startMenuLttrGap = 8
+	ballRandomness   = 20
 )
