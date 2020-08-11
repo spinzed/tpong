@@ -140,7 +140,7 @@ func formatKeys(eventNames []string, mode string) []string {
 
 	// cycle all event names and get their keys and descs
 	for _, eventName := range eventNames {
-		if event, key := getEventByName(eventName); event != nil {
+		if event, key := getEventByName(&keysGame, eventName); event != nil {
 			var realKey string
 
 			if alternate[key] != "" {

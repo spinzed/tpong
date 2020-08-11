@@ -12,6 +12,10 @@ const (
 	eventReset       = "eventReset"
 	eventSwitchTheme = "eventSwitchTheme"
 	eventToggleBg    = "eventToggleBg"
+	stateClick       = "stateDown"
+	stateRelease     = "stateUp"
+	stateHold        = "stateNoDelay"
+	stateNormal      = "stateHeld"
 	playerP1         = "p1"
 	playerP2         = "p2"
 	ballDiam         = 1

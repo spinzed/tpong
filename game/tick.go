@@ -2,10 +2,10 @@ package game
 
 // Update the start menu state every tick
 func (g *Game) PerformStartMenuTick() {
+	defer g.drawStartGameMenu()
+
 	g.ball.Move()
 	g.checkCollision(true)
-
-	g.drawStartGameMenu()
 }
 
 // Update the game state every tick.

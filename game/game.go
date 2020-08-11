@@ -12,8 +12,8 @@ type Game struct {
 	players    *Players
 	ball       *Ball
 	keys       *[]string
-	event      chan keyState
-	dispEvent  chan keyState
+	event      chan KeyDispatch
+	dispEvent  chan KeyDispatch
 	ticker     *time.Ticker
 	keyboard   []*keylogger.KeyLogger
 	theme      *ThemeHandler
@@ -89,8 +89,8 @@ func (g *Game) Init(optns *GameSettings) error {
 	// keyboard channels and key state init
 	var keys []string
 	g.keys = &keys
-	g.event = make(chan keyState)
-	g.dispEvent = make(chan keyState)
+	g.event = make(chan KeyDispatch)
+	g.dispEvent = make(chan KeyDispatch)
 
 	// ticker init according to framerate variable
 	g.ticker = time.NewTicker(1000000 / framerate * time.Microsecond)
@@ -167,9 +167,11 @@ func (g *Game) EndLoop() {
 
 // Start the game
 func (g *Game) Start() {
-	// reset the ball from the start menu
-	g.ball.Reset()
-	g.started = true
+	if !g.started {
+		// reset the ball from the start menu
+		g.ball.Reset()
+		g.started = true
+	}
 }
 
 // Reset the game
@@ -211,14 +213,21 @@ func (g *Game) toggleBackground() {
 
 // End the game. Must be called when game ends or if g.Init fails for cleanup.
 func (g *Game) End() {
-	// g.screen.Fini() is fixed, but a leftover "q" is left when terminal is closed.
-	// looking for fix
+	// needs fix: leftover q in terminal when game ends
 	// check for nil is required in case the game ends with an error and g.screen is not set,
 	// in that case it would panic with nil pointer dereference. If it doesnt exist,
 	// then there is no need to clean it up.
 	if g.screen != nil {
 		g.screen.Fini()
 	}
+}
+
+// Gets the current active key map.
+func (g *Game) getKeys() map[string]Event {
+	if g.started {
+		return keysGame
+	}
+	return map[string]Event{}
 }
 
 // Move player 1 char higher. If player is at the edge, do nothing.

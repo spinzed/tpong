@@ -7,38 +7,46 @@ package game
 type Event struct {
 	Name        string
 	Description string
+	// State describes the key press type the event is triggered, but doesn't define the key.
+	// valid states are click, release, hold or normal
+	State string
 }
 
-func newEvent(name string, desc string) Event {
-	return Event{name, desc}
+func newEvent(name string, desc string, state string) Event {
+	return Event{name, desc, state}
 }
 
-// These events are fired while the key is held down.
-var events = map[string]Event{
-	"W":    newEvent(eventP1Up, "Move Player1 Up"),
-	"S":    newEvent(eventP1Down, "Move Player1 Down"),
-	"Up":   newEvent(eventP2Up, "Move Player2 Up"),
-	"Down": newEvent(eventP2Down, "Move Player2 Down"),
+// Keys which can be triggered when game is started
+var keysStart = map[string]Event{
+	"SPACE": newEvent(eventStart, "Start Game", stateClick),
+	"Up":    newEvent(eventP2Up, "Move Player2 Up", stateHold),
+	"Down":  newEvent(eventP2Down, "Move Player2 Down", stateHold),
+	"Q":     newEvent(eventDestroy, "Quit", stateClick),
+	"P":     newEvent(eventTogglePause, "Toggle Pause", stateClick),
+	"R":     newEvent(eventReset, "Reset Round", stateClick),
+	"T":     newEvent(eventSwitchTheme, "Switch Theme", stateClick),
 }
 
-// For these events, the event is immediately dispatched and
-// which results in immediate action call.
-var dispEvents = map[string]Event{
-	"SPACE": newEvent(eventStart, "Start Game"),
-	"Q":     newEvent(eventDestroy, "Quit"),
-	"P":     newEvent(eventTogglePause, "Toggle Pause"),
-	"R":     newEvent(eventReset, "Reset Round"),
-	"T":     newEvent(eventSwitchTheme, "Switch Theme"),
-	//		"B":     eventToggleBg,
+// Keys which can be triggered when game is started
+var keysGame = map[string]Event{
+	"W":     newEvent(eventP1Up, "Move Player1 Up", stateHold),
+	"S":     newEvent(eventP1Down, "Move Player1 Down", stateHold),
+	"Up":    newEvent(eventP2Up, "Move Player2 Up", stateHold),
+	"Down":  newEvent(eventP2Down, "Move Player2 Down", stateHold),
+	"SPACE": newEvent(eventStart, "Start Game", stateClick),
+	"Q":     newEvent(eventDestroy, "Quit", stateClick),
+	"P":     newEvent(eventTogglePause, "Toggle Pause", stateClick),
+	"R":     newEvent(eventReset, "Reset Round", stateClick),
+	"T":     newEvent(eventSwitchTheme, "Switch Theme", stateClick),
 }
 
-func getEventByName(name string) (*Event, string) {
-	for key, event := range dispEvents {
-		if event.Name == name {
-			return &event, key
-		}
-	}
-	for key, event := range events {
+func getEvent(m *map[string]Event, k string) Event {
+	// this will be expanded in the future
+	return (*m)[k]
+}
+
+func getEventByName(m *map[string]Event, name string) (*Event, string) {
+	for key, event := range *m {
 		if event.Name == name {
 			return &event, key
 		}
@@ -47,7 +55,7 @@ func getEventByName(name string) (*Event, string) {
 }
 
 // Actions that are dispatched when the player is in start menu
-func (g *Game) dispatchStartAction(e keyState) {
+func (g *Game) dispatchStartAction(e KeyDispatch) {
 	switch e.Name {
 	case eventDestroy:
 		g.EndLoop()
@@ -61,7 +69,7 @@ func (g *Game) dispatchStartAction(e keyState) {
 }
 
 // Actions that are dispatched when game is started
-func (g *Game) dispatchGameAction(e keyState) {
+func (g *Game) dispatchGameAction(e KeyDispatch) {
 	switch e.Name {
 	case eventDestroy:
 		g.EndLoop()

@@ -4,6 +4,11 @@ import (
 	"github.com/MarinX/keylogger"
 )
 
+type KeyDispatch struct {
+	Name string
+	Down bool
+}
+
 type noKeyboardError struct {
 	s string
 }
@@ -41,14 +46,9 @@ func newKeyboard() ([]*keylogger.KeyLogger, error) {
 	return allKbs, nil
 }
 
-type keyState struct {
-	Name string
-	Down bool
-}
-
 // Listen for keyboard events and dispatch them through a channel.
 // It will block so it must be called in a separate goroutine
-func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
+func keyboardListen(k *keylogger.KeyLogger, c chan KeyDispatch, dc chan KeyDispatch) {
 	kch := k.Read()
 
 	for {
@@ -56,30 +56,22 @@ func keyboardListen(k *keylogger.KeyLogger, c chan keyState, dc chan keyState) {
 		case e := <-kch:
 			switch e.Type {
 			case keylogger.EvKey:
-				// there are separate checks for KeyPress and KeyRelease because
-				// it can happen that a key is held down continuously, in that case
-				// both methods return false
-				if ev := getEvent(&events, e.KeyString()); ev.Name != "" {
-					if e.KeyPress() {
-						c <- keyState{ev.Name, true}
-					}
+				ev := getEvent(&keysGame, e.KeyString())
 
-					if e.KeyRelease() {
-						c <- keyState{ev.Name, false}
-					}
-				}
-				if ev := getEvent(&dispEvents, e.KeyString()); ev.Name != "" {
+				switch ev.State {
+				case stateClick:
 					if e.KeyPress() {
-						dc <- keyState{ev.Name, true}
+						dc <- KeyDispatch{ev.Name, true}
+					}
+				case stateHold:
+					if e.KeyPress() {
+						c <- KeyDispatch{ev.Name, true}
+					}
+					if e.KeyRelease() {
+						c <- KeyDispatch{ev.Name, false}
 					}
 				}
 			}
 		}
 	}
 }
-
-func getEvent(m *map[string]Event, k string) Event {
-	// this will be expanded in the future
-	return (*m)[k]
-}
-
