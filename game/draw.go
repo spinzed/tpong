@@ -2,7 +2,6 @@ package game
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/gdamore/tcell"
 )
@@ -35,7 +34,7 @@ func (g *Game) drawGameTick() {
 	g.drawBall()
 
 	if g.paused {
-		g.drawPauseText()
+		g.drawLegend()
 	}
 }
 
@@ -55,7 +54,7 @@ func (g *Game) drawStartGameMenu() {
 	st := g.theme.GetCurrent().GetOverlayStyle()
 	g.drawLetters(w/2, h/5*2, startMenuLttrGap, text, st)
 
-	g.drawStartText()
+	g.drawLegend()
 }
 
 // Draw background. Doesn't update the terminal.
@@ -80,107 +79,19 @@ func (g *Game) drawOverlay() {
 	}
 }
 
-// Draws the text on the start menu.
-func (g *Game) drawStartText() {
+func (g *Game) drawLegend() {
 	w, h := g.screen.Size()
+	legend := g.keyData.Legend
 
-	text := formatKeys([]string{
-		eventStart,
-		eventTogglePause,
-		eventReset,
-		eventSwitchTheme,
-		eventDestroy,
-		eventP1Up,
-		eventP1Down,
-		eventP2Up,
-		eventP2Down,
-	}, "equal")
-
-	g.lines(w/2, h-len(text)-1, text, "mid")
-}
-
-// Draws the text on the pause menu. Doesn't update the terminal.
-func (g *Game) drawPauseText() {
-	_, h := g.screen.Size()
-
-	text := formatKeys([]string{
-		eventTogglePause,
-		eventReset,
-		eventSwitchTheme,
-		eventDestroy,
-		eventP1Up,
-		eventP1Down,
-		eventP2Up,
-		eventP2Down,
-	}, "distance")
-
-	finalText := append([]string{" == PAUSE == "}, text...)
-
-	g.lines(0, h-len(finalText)-1, finalText, "left")
-}
-
-// Fetches the keys and event descriptions and formats them.
-// Mode dictates should keys be format for left or middle.
-// May be moved to another file in the future.
-func formatKeys(eventNames []string, mode string) []string {
-	if mode != "equal" && mode != "distance" {
-		panic("Invalid format mode:" + mode)
+	x := w / 2
+	if legend.Type != "middle" {
+		x = 0
 	}
 
-	var keys []string
-	var descs []string
+	text := g.keyData.formatKeys()
+	y := h - len(text) - 1
 
-	var maxKeylen int
-
-	// switch default key names with these
-	alternate := map[string]string{
-		"Up":   "ArrowUp",
-		"Down": "ArrowDown",
-	}
-
-	// cycle all event names and get their keys and descs
-	for _, eventName := range eventNames {
-		if event, key := getEventByName(&keysGame, eventName); event != nil {
-			var realKey string
-
-			if alternate[key] != "" {
-				realKey = alternate[key]
-			} else {
-				realKey = key
-			}
-			keys = append(keys, realKey)
-			descs = append(descs, event.Description)
-
-			if len(key) > maxKeylen {
-				maxKeylen = len(realKey)
-			}
-		}
-	}
-
-	maxKeylen += 4
-
-	var final []string
-
-	// format every line and append it to the final line list
-	for i, key := range keys {
-		desc := descs[i]
-		var thstring string
-
-		if mode == "distance" {
-			thstring += strings.Repeat(" ", (maxKeylen-len(key))/2)
-			thstring += key
-			thstring += strings.Repeat(" ", maxKeylen-len(key)-((maxKeylen-len(key))/2))
-			thstring += "- " + desc + " "
-		} else {
-			thstring += "  " + key + " - " + desc + " "
-			if len(thstring)%2 == 1 {
-				thstring += " "
-			}
-		}
-		final = append(final, thstring)
-	}
-
-	return final
+	g.lines(x, y, text, legend.Type)
 }
 
 // Draw every player. Doesn't update the terminal.
@@ -274,14 +185,14 @@ func (g *Game) rect(x1 int, x2 int, y1 int, y2 int, mainc rune, style tcell.Styl
 func (g *Game) lines(x int, y int, lines []string, mode string) {
 	st := g.theme.GetCurrent().GetTextStyle()
 
-	if mode != "left" && mode != "mid" {
+	if mode != "left" && mode != "middle" {
 		panic("Invalid line draw mode: " + mode)
 	}
 
 	for i, line := range lines {
 		realx := x
 
-		if mode == "mid" {
+		if mode == "middle" {
 			realx -= len(line) / 2
 		}
 		g.text(realx, y+i, line, st)

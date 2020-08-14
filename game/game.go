@@ -8,19 +8,19 @@ import (
 )
 
 type Game struct {
-	screen     tcell.Screen
-	players    *Players
-	ball       *Ball
-	keys       *[]string
-	event      chan KeyDispatch
-	dispEvent  chan KeyDispatch
-	ticker     *time.Ticker
-	keyboard   []*keylogger.KeyLogger
-	theme      *ThemeHandler
-	started    bool
-	paused     bool
-	hardPaused bool
-	loopActive bool
+	screen       tcell.Screen
+	players      *Players
+	ball         *Ball
+	activeEvents *[]string
+	keyDisp      chan KeyEvent
+	ticker       *time.Ticker
+	keyboard     []*keylogger.KeyLogger
+	theme        *ThemeHandler
+	keyData      *ScreenKeyData
+	started      bool
+	paused       bool
+	hardPaused   bool
+	loopActive   bool
 }
 
 type GameSettings struct {
@@ -86,11 +86,10 @@ func (g *Game) Init(optns *GameSettings) error {
 	g.players = newPlayers(w, h, padding)
 	g.ball = newBall((w-ballDiam)/2, 0, ballDiam, 1, 1)
 
-	// keyboard channels and key state init
-	var keys []string
-	g.keys = &keys
-	g.event = make(chan KeyDispatch)
-	g.dispEvent = make(chan KeyDispatch)
+	// keyboard channels and key/event state init
+	var activeEvents []string
+	g.activeEvents = &activeEvents
+	g.keyDisp = make(chan KeyEvent)
 
 	// ticker init according to framerate variable
 	g.ticker = time.NewTicker(1000000 / framerate * time.Microsecond)
@@ -101,6 +100,12 @@ func (g *Game) Init(optns *GameSettings) error {
 	// mark that the game loop active - g.Loop
 	// should be made to false to end the game
 	g.loopActive = true
+
+	// keyData is a struct which stores information about the current screen's,
+	// key actions and legend. It doesn't control the screen behavior.
+	// all screens are located in the screens map
+	// the inital screen is the start menu screen
+	g.keyData = screens[screenStartMenu]
 
 	// signal that everything is ok
 	return nil
@@ -123,7 +128,7 @@ func (g *Game) Loop() {
 	// start the keyboard input listeners
 	// Im a bloody genious
 	for _, kb := range g.keyboard {
-		go keyboardListen(kb, g.event, g.dispEvent)
+		go keyboardListen(kb, g.getKeys, g.keyDisp)
 	}
 
 	for g.loopActive {
@@ -132,29 +137,8 @@ func (g *Game) Loop() {
 			// draw the gui and update the terminal
 			g.drawGUI()
 			g.updateTerminal()
-		case lol := <-g.event:
-			// filter the key from the slice if it is in there
-			var newKeys []string
-
-			for _, key := range *g.keys {
-				if lol.Name != key {
-					newKeys = append(newKeys, key)
-				}
-			}
-
-			// update only if there are less than 5 chars and key is pressed down
-			if len(*g.keys) < 5 && lol.Down {
-				newKeys = append(newKeys, lol.Name)
-			}
-
-			// update the old array
-			g.keys = &newKeys
-		case e := <-g.dispEvent:
-			if g.started {
-				g.dispatchGameAction(e)
-			} else {
-				g.dispatchStartAction(e)
-			}
+		case e := <-g.keyDisp:
+			g.parseEvent(e)
 		}
 	}
 }
@@ -170,7 +154,19 @@ func (g *Game) Start() {
 	if !g.started {
 		// reset the ball from the start menu
 		g.ball.Reset()
+		g.keyData = screens[screenGame]
 		g.started = true
+	}
+}
+
+// End the game. Must be called when game ends or if g.Init fails for cleanup.
+func (g *Game) End() {
+	// needs fix: leftover q in terminal when game ends
+	// check for nil is required in case the game ends with an error and g.screen is not set,
+	// in that case it would panic with nil pointer dereference. If it doesnt exist,
+	// then there is no need to clean it up.
+	if g.screen != nil {
+		g.screen.Fini()
 	}
 }
 
@@ -194,7 +190,7 @@ func (g *Game) togglePause() {
 	g.paused = !g.paused
 
 	if g.paused {
-		g.drawPauseText()
+		g.drawLegend()
 		g.screen.Show()
 	}
 }
@@ -211,23 +207,9 @@ func (g *Game) toggleBackground() {
 	g.drawGUI()
 }
 
-// End the game. Must be called when game ends or if g.Init fails for cleanup.
-func (g *Game) End() {
-	// needs fix: leftover q in terminal when game ends
-	// check for nil is required in case the game ends with an error and g.screen is not set,
-	// in that case it would panic with nil pointer dereference. If it doesnt exist,
-	// then there is no need to clean it up.
-	if g.screen != nil {
-		g.screen.Fini()
-	}
-}
-
 // Gets the current active key map.
-func (g *Game) getKeys() map[string]Event {
-	if g.started {
-		return keysGame
-	}
-	return map[string]Event{}
+func (g *Game) getKeys() *map[Key]Event {
+	return g.keyData.Keys
 }
 
 // Move player 1 char higher. If player is at the edge, do nothing.
@@ -253,66 +235,79 @@ func (g *Game) movePlayerDown(p *Player) {
 	p.GoDown()
 }
 
-// Check and handle collisions between balls, walls and platforms
-func (g *Game) checkCollision(ballBouncesSides bool) {
-	w, h := g.ball.Coords()
-	d := g.ball.Diam()
-	vx, vy := g.ball.Vels()
-	sw, sh := g.screen.Size()
+// Move selected legend item up.
+func (g *Game) moveMenuSelectedUp() {
+	legend := g.keyData.Legend
+	legend.Selected--
 
-	// wall collisions. If ball side bouncing is enabled, bounce it,
-	// if it is not... do not bounce it
-	if ballBouncesSides {
-		if w < 1 && vx < 0 {
-			g.ball.SwitchX()
-		}
-		if w >= sw-2*d-1 && vx > 0 {
-			g.ball.SwitchX()
-		}
-	} else {
-		if w < 1 && vx < 0 {
-			g.players.P2.AddPoint()
-
-			// hardPause cannot be unpaused by player
-			g.hardPaused = true
-
-			go func() {
-				time.Sleep(scoreSleepSecs * time.Second)
-				g.hardPaused = false
-				g.Reset()
-			}()
-		}
-		if w >= sw-2*d-1 && vx > 0 {
-			g.players.P1.AddPoint()
-
-			// hardPause cannot be unpaused by player
-			g.hardPaused = true
-
-			go func() {
-				time.Sleep(scoreSleepSecs * time.Second)
-				g.hardPaused = false
-				g.Reset()
-			}()
-		}
+	if legend.Selected < 0 {
+		legend.Selected = len(*legend.Keys) - 1
 	}
-	if h <= 1 && vy < 0 {
-		g.ball.SwitchY()
-	}
-	if h >= sh-d && vy > 0 {
-		g.ball.SwitchY()
-	}
+}
 
-	// platform collisions
-	if !ballBouncesSides {
-		p1w, p1h := g.players.P1.Coords()
-		p2w, p2h := g.players.P2.Coords()
+// Move selected legend item down.
+func (g *Game) moveMenuSelectedDown() {
+	legend := g.keyData.Legend
+	legend.Selected++
 
-		if h+d > p1h && h < p1h+platformHeight && (p1w+platformWidth)/2+1 == w/2 {
-			g.ball.SwitchX()
+	if legend.Selected > len(*legend.Keys)-1 {
+		legend.Selected = 0
+	}
+}
+
+// Dispatches an action according to the selected legend item.
+func (g *Game) doSelectedMenuAction() {
+	legend := g.keyData.Legend
+	keysarr := *legend.Keys
+
+	ev := keysarr[legend.Selected]
+
+	g.parseEvent(ev)
+}
+
+// Triggers an action based on the event an key that have been passed.
+func (g *Game) parseEvent(e KeyEvent) {
+	// filter the key from the slice if it is in there
+	switch e.Key.State {
+	case stateHold, stateHoldEnd:
+		var newEvents []string
+
+		for _, event := range *g.activeEvents {
+			if e.Event.Name != event {
+				newEvents = append(newEvents, event)
+			}
 		}
-		if h+d > p2h && h < p2h+platformHeight && p2w/2+1 == w/2+d {
-			g.ball.SwitchX()
-		}
-	}
 
+		// update only if there are less than 5 chars and key is pressed down
+		if len(*g.activeEvents) < 5 && e.State == stateHold {
+			newEvents = append(newEvents, e.Event.Name)
+		}
+
+		// update the old array
+		g.activeEvents = &newEvents
+	case stateClick, stateRelease, stateNormal:
+		g.dispatchAction(e.Event)
+	}
+}
+
+// Calls an action according to the event.
+func (g *Game) dispatchAction(e Event) {
+	switch e.Name {
+	case eventDestroy:
+		g.EndLoop()
+	case eventStart:
+		g.Start()
+	case eventTogglePause:
+		g.togglePause()
+	case eventReset:
+		g.Reset()
+	case eventSwitchTheme:
+		g.switchTheme()
+	case eventMenuUp:
+		g.moveMenuSelectedUp()
+	case eventMenuDown:
+		g.moveMenuSelectedDown()
+	case eventMenuSelect:
+		g.doSelectedMenuAction()
+	}
 }

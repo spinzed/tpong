@@ -1,5 +1,7 @@
 package game
 
+type TickFunc func() bool
+
 // Update the start menu state every tick
 func (g *Game) PerformStartMenuTick() {
 	defer g.drawStartGameMenu()
@@ -22,7 +24,7 @@ func (g *Game) PerformGameTick() {
 	}
 
 	// keys that don't persist when game is paused
-	for _, key := range *g.keys {
+	for _, key := range *g.activeEvents {
 		switch key {
 		case eventP1Up:
 			g.movePlayerUp(g.players.P1)

@@ -4,11 +4,6 @@ import (
 	"github.com/MarinX/keylogger"
 )
 
-type KeyDispatch struct {
-	Name string
-	Down bool
-}
-
 type noKeyboardError struct {
 	s string
 }
@@ -31,7 +26,7 @@ func newKeyboard() ([]*keylogger.KeyLogger, error) {
 		return nil, newNoKeyboardError("No keyboard detected")
 	}
 
-	allKbs := make([]*keylogger.KeyLogger, 0)
+	var allKbs []*keylogger.KeyLogger
 
 	for _, kb := range kbs {
 		k, err := keylogger.New(kb)
@@ -48,7 +43,9 @@ func newKeyboard() ([]*keylogger.KeyLogger, error) {
 
 // Listen for keyboard events and dispatch them through a channel.
 // It will block so it must be called in a separate goroutine
-func keyboardListen(k *keylogger.KeyLogger, c chan KeyDispatch, dc chan KeyDispatch) {
+// Since the keys map is constantly changing, instead of directly passing the keys,
+// function that returns keys at execution is passed.
+func keyboardListen(k *keylogger.KeyLogger, ky func() *map[Key]Event, c chan KeyEvent) {
 	kch := k.Read()
 
 	for {
@@ -56,19 +53,34 @@ func keyboardListen(k *keylogger.KeyLogger, c chan KeyDispatch, dc chan KeyDispa
 		case e := <-kch:
 			switch e.Type {
 			case keylogger.EvKey:
-				ev := getEvent(&keysGame, e.KeyString())
+				key := newKey(e.KeyString(), stateNormal)
 
-				switch ev.State {
-				case stateClick:
-					if e.KeyPress() {
-						dc <- KeyDispatch{ev.Name, true}
+				if ev := getEvent(ky(), key); !e.KeyRelease() && ev.Name != "" {
+					c <- KeyEvent{key, ev}
+				}
+				if e.KeyPress() {
+					key.State = stateClick
+					if ev := getEvent(ky(), key); ev.Name != "" {
+						c <- KeyEvent{key, ev}
 					}
-				case stateHold:
-					if e.KeyPress() {
-						c <- KeyDispatch{ev.Name, true}
+
+					key.State = stateHold
+					if ev := getEvent(ky(), key); ev.Name != "" {
+						c <- KeyEvent{key, ev}
 					}
-					if e.KeyRelease() {
-						c <- KeyDispatch{ev.Name, false}
+				}
+				if e.KeyRelease() {
+					key.State = stateRelease
+					if ev := getEvent(ky(), key); ev.Name != "" {
+						c <- KeyEvent{key, ev}
+					}
+
+					key.State = stateHold
+					if ev := getEvent(ky(), key); ev.Name != "" {
+						// stateHoldEnd is only used when signal needs to be dispatched
+						// that stateHold action must be dismissed
+						key.State = stateHoldEnd
+						c <- KeyEvent{key, ev}
 					}
 				}
 			}
