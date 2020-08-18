@@ -6,9 +6,12 @@ import "strings"
 // dispatchable on the current screen.
 // Keys is not of type KeyEvent because it is needed for the events
 // to be quickly accessed via the key.
+// AltKeys are used for special cases, per example, when the game is
+// paused. Thus, it is optional (nil can be passed)
 type ScreenKeyData struct {
-	Keys   *map[Key]Event
-	Legend *Legend
+	Keys    *map[Key]Event
+	AltKeys *map[Key]Event
+	Legend  *Legend
 }
 
 type Legend struct {
@@ -18,14 +21,14 @@ type Legend struct {
 	Selected int
 }
 
-func newScreenKeyData(k *map[Key]Event, lk *[]KeyEvent, lt string) *ScreenKeyData {
+func newScreenKeyData(k *map[Key]Event, al *map[Key]Event, lk *[]KeyEvent, lt string) *ScreenKeyData {
 	legend := &Legend{lt, lk, 0}
-	return &ScreenKeyData{k, legend}
+	return &ScreenKeyData{k, al, legend}
 }
 
 var screens = map[string]*ScreenKeyData{
-	screenStartMenu: newScreenKeyData(&keysStart, &legendKeysStart, "middle"),
-	screenGame:      newScreenKeyData(&keysGame, &legendKeysGame, "left"),
+	screenStartMenu: newScreenKeyData(&keysStart, nil, &legendKeysStart, "middle"),
+	screenGame:      newScreenKeyData(&keysGame, &altKeysGame, &legendKeysGame, "left"),
 }
 
 // Fetches the keys and event descriptions and formats them.
@@ -70,7 +73,7 @@ func (s *ScreenKeyData) formatKeys() []string {
 		var thstring string
 
 		if mode == "left" {
-			thstring += strings.Repeat(" ", (maxKeylen-len(key))/2 - 1)
+			thstring += strings.Repeat(" ", (maxKeylen-len(key))/2-1)
 			if i == selected {
 				thstring += ">> "
 			} else {
@@ -104,8 +107,8 @@ func (s *ScreenKeyData) formatKeys() []string {
 var keysStart = map[Key]Event{
 	newKey("SPACE", stateClick): newEvent(eventStart, "Start Game"),
 	newKey("ENTER", stateClick): newEvent(eventMenuSelect, "Select Menu Action"),
-	newKey("Up", stateNormal):   newEvent(eventMenuUp, "Move Player2 Up"),
-	newKey("Down", stateNormal): newEvent(eventMenuDown, "Move Player2 Down"),
+	newKey("Up", stateNormal):   newEvent(eventMenuUp, "Select Action Above"),
+	newKey("Down", stateNormal): newEvent(eventMenuDown, "Select Action Below"),
 	newKey("Q", stateClick):     newEvent(eventDestroy, "Quit"),
 	newKey("P", stateClick):     newEvent(eventTogglePause, "Toggle Pause"),
 	newKey("R", stateClick):     newEvent(eventReset, "Reset Round"),
@@ -118,6 +121,18 @@ var keysGame = map[Key]Event{
 	newKey("S", stateHold):    newEvent(eventP1Down, "Move Player1 Down"),
 	newKey("Up", stateHold):   newEvent(eventP2Up, "Move Player2 Up"),
 	newKey("Down", stateHold): newEvent(eventP2Down, "Move Player2 Down"),
+	newKey("Q", stateClick):   newEvent(eventDestroy, "Quit"),
+	newKey("P", stateClick):   newEvent(eventTogglePause, "Toggle Pause"),
+	newKey("R", stateClick):   newEvent(eventReset, "Reset Round"),
+	newKey("T", stateClick):   newEvent(eventSwitchTheme, "Switch Theme"),
+}
+
+var altKeysGame = map[Key]Event{
+	newKey("W", stateHold):    newEvent(eventP1Up, "Move Player1 Up"),
+	newKey("S", stateHold):    newEvent(eventP1Down, "Move Player1 Down"),
+	newKey("ENTER", stateClick): newEvent(eventMenuSelect, "Select Menu Action"),
+	newKey("Up", stateNormal):   newEvent(eventMenuUp, "Select Action Above"),
+	newKey("Down", stateNormal): newEvent(eventMenuDown, "Select Action Below"),
 	newKey("Q", stateClick):   newEvent(eventDestroy, "Quit"),
 	newKey("P", stateClick):   newEvent(eventTogglePause, "Toggle Pause"),
 	newKey("R", stateClick):   newEvent(eventReset, "Reset Round"),

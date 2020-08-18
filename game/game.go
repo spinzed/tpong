@@ -83,6 +83,10 @@ func (g *Game) Init(optns *GameSettings) error {
 
 	// game asset init
 	w, h := g.screen.Size()
+	// half of the width needs to be divisible with 2 because of ball
+	if w/2 % 2 == 1 {
+		w += 2
+	}
 	g.players = newPlayers(w, h, padding)
 	g.ball = newBall((w-ballDiam)/2, 0, ballDiam, 1, 1)
 
@@ -138,7 +142,7 @@ func (g *Game) Loop() {
 			g.drawGUI()
 			g.updateTerminal()
 		case e := <-g.keyDisp:
-			g.parseEvent(e)
+			g.dispatchEvent(e)
 		}
 	}
 }
@@ -209,6 +213,9 @@ func (g *Game) toggleBackground() {
 
 // Gets the current active key map.
 func (g *Game) getKeys() *map[Key]Event {
+	if g.paused && g.keyData.AltKeys != nil {
+		return g.keyData.AltKeys
+	}
 	return g.keyData.Keys
 }
 
@@ -243,6 +250,14 @@ func (g *Game) moveMenuSelectedUp() {
 	if legend.Selected < 0 {
 		legend.Selected = len(*legend.Keys) - 1
 	}
+
+	keysarr := *legend.Keys
+	ev := keysarr[legend.Selected]
+
+	// if the event is hold up/down, skip it
+	if ev.State == stateHold || ev.State == stateHoldEnd {
+		g.moveMenuSelectedUp()
+	}
 }
 
 // Move selected legend item down.
@@ -253,6 +268,14 @@ func (g *Game) moveMenuSelectedDown() {
 	if legend.Selected > len(*legend.Keys)-1 {
 		legend.Selected = 0
 	}
+
+	keysarr := *legend.Keys
+	ev := keysarr[legend.Selected]
+
+	// if the event is hold up/down, skip it
+	if ev.State == stateHold || ev.State == stateHoldEnd {
+		g.moveMenuSelectedDown()
+	}
 }
 
 // Dispatches an action according to the selected legend item.
@@ -262,11 +285,16 @@ func (g *Game) doSelectedMenuAction() {
 
 	ev := keysarr[legend.Selected]
 
-	g.parseEvent(ev)
+	// if it triggers hold or stop hold action, return (since the key isnt actually held)
+	if ev.State == stateHold || ev.State == stateHoldEnd {
+		return
+	}
+
+	g.dispatchEvent(ev)
 }
 
 // Triggers an action based on the event an key that have been passed.
-func (g *Game) parseEvent(e KeyEvent) {
+func (g *Game) dispatchEvent(e KeyEvent) {
 	// filter the key from the slice if it is in there
 	switch e.Key.State {
 	case stateHold, stateHoldEnd:

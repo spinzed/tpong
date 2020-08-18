@@ -67,8 +67,20 @@ func (p *Players) GetAll() []*Player {
 // Get a pair of players ready and initialised
 func newPlayers(w int, h int, padding int) *Players {
 	initialPos := (h - platformHeight) / 2
-	p1 := newPlayer(playerP1, initialPos, padding)
-	p2 := newPlayer(playerP2, initialPos, w-padding)
+	p1Pad := padding
+	p2Pad := w-padding
+
+	// left platform must be on even pixel
+	if p1Pad % 2 == 0 {
+		p1Pad += 1
+	}
+	// right platform must be on odd pixel
+	if p2Pad % 2 == 1 {
+		p2Pad += 1
+	}
+
+	p1 := newPlayer(playerP1, initialPos, p1Pad)
+	p2 := newPlayer(playerP2, initialPos, p2Pad)
 
 	return &Players{p1, p2}
 }

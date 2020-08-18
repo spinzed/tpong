@@ -56,10 +56,12 @@ func (g *Game) checkCollision(ballBouncesSides bool) {
 		p1w, p1h := g.players.P1.Coords()
 		p2w, p2h := g.players.P2.Coords()
 
-		if h+d > p1h && h < p1h+platformHeight && (p1w+platformWidth)/2+1 == w/2 {
+		// left side
+		if h+d > p1h && h < p1h+platformHeight && (p1w+platformWidth)/2 == w/2 {
 			g.ball.SwitchX()
 		}
-		if h+d > p2h && h < p2h+platformHeight && p2w/2+1 == w/2+d {
+		// right side
+		if h+d > p2h && h < p2h+platformHeight && p2w/2 == w/2+d {
 			g.ball.SwitchX()
 		}
 	}
