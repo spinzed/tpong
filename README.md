@@ -2,7 +2,8 @@
 The old school Atari Pong game remade in terminal with Golang.  
 
 # General Info
-For best experience, make your terminal fullscreen or zoom out.  
+For the best experience, make your terminal fullscreen or zoom it out.  
+
 The game currently works **only on Linux systems** due to platform-dependent key detection.  
 For a similar reason, this game **must be run with superuser privileges**.  
 
@@ -11,6 +12,14 @@ For keyboard events detection, the [keylogger](https://github.com/MarinX/keylogg
 
 ## Why sudo?
 It is a compromise that had to be made. Since you cannot detect keyboard press and release key events through terminal, package [keylogger](https://github.com/MarinX/keylogger) is used to do it. Basically, it reads input from `/dev/input/event*` which requires root access. It is a drawback, but without it, the game would not be playable.
+
+# Features
+- Two player local multiplayer!
+- Command line arguments!
+- Start menu!
+- Round pausing!
+- Themes!
+- ... and more to come!
 
 # Compile & Run
 To compile this project into an executable, run:
@@ -25,10 +34,20 @@ Alternative is to git clone this repo, cd into it and run:
 sudo go run .
 ```
 
-# Game Screenshot
-![Image Not Found](https://i.ibb.co/rvmNys6/game.jpg)
+# Game Screenshots
+![Image Not Found](https://i.ibb.co/YN1ZJh7/1.jpg)  
+![Image Not Found](https://i.ibb.co/zQpjkDw/2.jpg)  
+![Image Not Found](https://i.ibb.co/drdpLBX/3.jpg)  
 
 # Controls
+### In menus:
+|  Key  |         Action         |
+|:-----:|:----------------------:|
+| Enter | Choose Selected Action |
+|   ↑   |    Scroll Actions Up   |
+|   ↓   |   Scroll Actions Down  |
+
+### In game:
 |  Key  |       Action      |
 |:-----:|:-----------------:|
 |   W   |     Player1 Up    |
@@ -42,10 +61,15 @@ sudo go run .
 |   T   |    Switch Theme   |
 |   B   | Toggle Background |
 
+## Command line arguments:
+|  Flag  |                  Description                 | Default Value | Optional |
+|:------:|:--------------------------------------------:|:-------------:|:--------:|
+| --nobg | Dictates whether background should be hidden |     false     |    yes   |
+
+
 # Further Plans & Todos
 Eventually, this project may be expanded:
 1. that it can be hosted via HTTP API
-2. that it is compatible with online play
+2. that it is compatible with online play  
 
-# Keep in Mind
-This project is primarily an exercise for me to learn more about the Go language. That being said, **any constructive feedback is appreciated**!
+**Any form of contribution or feedback is appreciated!**
