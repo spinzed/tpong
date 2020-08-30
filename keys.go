@@ -1,4 +1,4 @@
-package game
+package main
 
 // This file defines what action should dispatch on every key and
 // events that will be dispatched depending on the state of the game

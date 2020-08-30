@@ -1,4 +1,4 @@
-package game
+package main
 
 import (
 	"time"
@@ -28,7 +28,7 @@ type GameSettings struct {
 }
 
 // Create a new game instance initialised and ready to go
-func Create(options *GameSettings) (*Game, error) {
+func CreateGame(options *GameSettings) (*Game, error) {
 	g := Game{}
 
 	if err := g.Init(options); err != nil {

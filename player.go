@@ -1,4 +1,4 @@
-package game
+package main
 
 type Player struct {
 	tag    string

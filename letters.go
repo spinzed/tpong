@@ -1,4 +1,4 @@
-package game
+package main
 
 func getCellsFromChar(n string) [][]uint {
 	switch n {

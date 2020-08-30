@@ -1,4 +1,4 @@
-package argparse
+package main
 
 import "github.com/jessevdk/go-flags"
 
@@ -6,7 +6,7 @@ type Options struct {
 	BgHidden bool `long:"nobg" description:"Disable background"`
 }
 
-func Parse(argstr []string) (*Options, error) {
+func ArgParse(argstr []string) (*Options, error) {
 	opts := &Options{}
 	_, err := flags.ParseArgs(opts, argstr)
 
