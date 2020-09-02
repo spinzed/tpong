@@ -113,6 +113,7 @@ var keysStart = map[Key]Event{
 	newKey("P", stateClick):     newEvent(eventTogglePause, "Toggle Pause"),
 	newKey("R", stateClick):     newEvent(eventReset, "Reset Round"),
 	newKey("T", stateClick):     newEvent(eventSwitchTheme, "Switch Theme"),
+	newKey("A", stateClick):     newEvent(eventToggleAI, "Toggle AI"),
 }
 
 // Keys which can be triggered when game is started
@@ -128,20 +129,21 @@ var keysGame = map[Key]Event{
 }
 
 var altKeysGame = map[Key]Event{
-	newKey("W", stateHold):    newEvent(eventP1Up, "Move Player1 Up"),
-	newKey("S", stateHold):    newEvent(eventP1Down, "Move Player1 Down"),
+	newKey("W", stateHold):      newEvent(eventP1Up, "Move Player1 Up"),
+	newKey("S", stateHold):      newEvent(eventP1Down, "Move Player1 Down"),
 	newKey("ENTER", stateClick): newEvent(eventMenuSelect, "Select Menu Action"),
 	newKey("Up", stateNormal):   newEvent(eventMenuUp, "Select Action Above"),
 	newKey("Down", stateNormal): newEvent(eventMenuDown, "Select Action Below"),
-	newKey("Q", stateClick):   newEvent(eventDestroy, "Quit"),
-	newKey("P", stateClick):   newEvent(eventTogglePause, "Toggle Pause"),
-	newKey("R", stateClick):   newEvent(eventReset, "Reset Round"),
-	newKey("T", stateClick):   newEvent(eventSwitchTheme, "Switch Theme"),
+	newKey("Q", stateClick):     newEvent(eventDestroy, "Quit"),
+	newKey("P", stateClick):     newEvent(eventTogglePause, "Toggle Pause"),
+	newKey("R", stateClick):     newEvent(eventReset, "Reset Round"),
+	newKey("T", stateClick):     newEvent(eventSwitchTheme, "Switch Theme"),
 }
 
 var legendKeysStart = []KeyEvent{
 	newKeyEvent("SPACE", stateClick, eventStart, "Start Game"),
 	newKeyEvent("Q", stateClick, eventDestroy, "Quit"),
+	newKeyEvent("A", stateClick, eventToggleAI, "Toggle AI"),
 	newKeyEvent("P", stateClick, eventTogglePause, "Toggle Pause"),
 	newKeyEvent("R", stateClick, eventReset, "Reset Round"),
 	newKeyEvent("T", stateClick, eventSwitchTheme, "Switch Theme"),

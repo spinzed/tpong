@@ -21,6 +21,7 @@ type Game struct {
 	paused       bool
 	hardPaused   bool
 	loopActive   bool
+	aiActive     bool
 }
 
 type GameSettings struct {
@@ -84,7 +85,7 @@ func (g *Game) Init(optns *GameSettings) error {
 	// game asset init
 	w, h := g.screen.Size()
 	// half of the width needs to be divisible with 2 because of ball
-	if w/2 % 2 == 1 {
+	if w/2%2 == 1 {
 		w += 2
 	}
 	g.players = newPlayers(w, h, padding)
@@ -211,6 +212,10 @@ func (g *Game) toggleBackground() {
 	g.drawGUI()
 }
 
+func (g *Game) toggleAI() {
+	g.aiActive = !g.aiActive
+}
+
 // Gets the current active key map.
 func (g *Game) getKeys() *map[Key]Event {
 	if g.paused && g.keyData.AltKeys != nil {
@@ -233,7 +238,6 @@ func (g *Game) movePlayerUp(p *Player) {
 func (g *Game) movePlayerDown(p *Player) {
 	_, sh := g.screen.Size()
 	_, ph := p.Coords()
-
 	// if the platform is at the bottom edge, do nothing
 	if ph > sh-p.GetHeight()-1 {
 		return
@@ -337,5 +341,7 @@ func (g *Game) dispatchAction(e Event) {
 		g.moveMenuSelectedDown()
 	case eventMenuSelect:
 		g.doSelectedMenuAction()
+	case eventToggleAI:
+		g.toggleAI()
 	}
 }

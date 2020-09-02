@@ -68,14 +68,14 @@ func (p *Players) GetAll() []*Player {
 func newPlayers(w int, h int, padding int) *Players {
 	initialPos := (h - platformHeight) / 2
 	p1Pad := padding
-	p2Pad := w-padding
+	p2Pad := w - padding
 
 	// left platform must be on even pixel
-	if p1Pad % 2 == 0 {
+	if p1Pad%2 == 0 {
 		p1Pad += 1
 	}
 	// right platform must be on odd pixel
-	if p2Pad % 2 == 1 {
+	if p2Pad%2 == 1 {
 		p2Pad += 1
 	}
 

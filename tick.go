@@ -31,10 +31,18 @@ func (g *Game) PerformGameTick() {
 		case eventP1Down:
 			g.movePlayerDown(g.players.P1)
 		case eventP2Up:
-			g.movePlayerUp(g.players.P2)
+			if !g.aiActive {
+				g.movePlayerUp(g.players.P2)
+			}
 		case eventP2Down:
-			g.movePlayerDown(g.players.P2)
+			if !g.aiActive {
+				g.movePlayerDown(g.players.P2)
+			}
 		}
+	}
+
+	if g.aiActive {
+		g.aiMove()
 	}
 
 	// move the ball for 1 tick
