@@ -18,6 +18,7 @@ It is a compromise that had to be made. Since you cannot detect keyboard press a
 - Command line arguments!
 - Start menu!
 - Round pausing!
+- AI!
 - Themes!
 - ... and more to come!
 
@@ -58,6 +59,7 @@ sudo go run .
 |   Q   |        Quit       |
 |   P   |    Toggle Pause   |
 |   R   |   Restart Round   |
+|   A   |     Toggle AI     |
 |   T   |    Switch Theme   |
 |   B   | Toggle Background |
 
