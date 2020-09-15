@@ -9,6 +9,7 @@ For a similar reason, this game **must be run with superuser privileges**.
 
 To interact with terminal, the [tcell](https://github.com/gdamore/tcell) package API is used.  
 For keyboard events detection, the [keylogger](https://github.com/MarinX/keylogger) package API is used.  
+For command line argument parsing, the [go-flags](https://github.com/jessevdk/go-flags) package API is used.  
 
 ## Why sudo?
 It is a compromise that had to be made. Since you cannot detect keyboard press and release key events through terminal, package [keylogger](https://github.com/MarinX/keylogger) is used to do it. Basically, it reads input from `/dev/input/event*` which requires root access. It is a drawback, but without it, the game would not be playable.
