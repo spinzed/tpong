@@ -34,10 +34,10 @@ var screens = map[string]*ScreenKeyData{
 // Fetches the keys and event descriptions and formats them.
 // Mode dictates should keys be format for left or middle.
 // May be moved to another file in the future.
-func (s *ScreenKeyData) formatKeys() []string {
-	mode := s.Legend.Type
-	keys := s.Legend.Keys
-	selected := s.Legend.Selected
+func (g *Game) formatKeys() []string {
+	mode := g.keyData.Legend.Type
+	keys := g.keyData.Legend.Keys
+	selected := g.keyData.Legend.Selected
 
 	if mode != "middle" && mode != "left" {
 		panic("Invalid format mode:" + mode)
@@ -82,12 +82,29 @@ func (s *ScreenKeyData) formatKeys() []string {
 			thstring += key
 			thstring += strings.Repeat(" ", maxKeylen-len(key)-((maxKeylen-len(key))/2)+1)
 			thstring += "- " + keyevt.Event.Description + " "
-		} else {
+		}
+		if mode == "middle" {
 			thstring += "  "
 			if i == selected {
 				thstring += ">> "
 			}
 			thstring += key + " - " + keyevt.Event.Description
+		}
+
+		// add key event specific things
+		switch keyevt.Event.Name {
+		case eventToggleAI:
+			thstring += ": [ "
+			if !g.aiActive {
+				thstring += "IN"
+			}
+			thstring += "ACTIVE ]"
+		case eventSwitchTheme:
+			thstring += ": [ " + g.theme.GetCurrent().Name + " ] "
+		}
+
+		// add the second part of the selector when the text is centered
+		if mode == "middle" {
 			if i == selected {
 				thstring += " <<"
 			}
@@ -143,9 +160,9 @@ var altKeysGame = map[Key]Event{
 var legendKeysStart = []KeyEvent{
 	newKeyEvent("SPACE", stateClick, eventStart, "Start Game"),
 	newKeyEvent("Q", stateClick, eventDestroy, "Quit"),
-	newKeyEvent("A", stateClick, eventToggleAI, "Toggle AI"),
 	newKeyEvent("P", stateClick, eventTogglePause, "Toggle Pause"),
 	newKeyEvent("R", stateClick, eventReset, "Reset Round"),
+	newKeyEvent("A", stateClick, eventToggleAI, "Toggle AI"),
 	newKeyEvent("T", stateClick, eventSwitchTheme, "Switch Theme"),
 	newKeyEvent("W", stateHold, eventP1Up, "Move Player1 Up"),
 	newKeyEvent("S", stateHold, eventP1Down, "Move Player1 Down"),

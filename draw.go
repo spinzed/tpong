@@ -88,9 +88,12 @@ func (g *Game) drawLegend() {
 		x = 0
 	}
 
-	text := g.keyData.formatKeys()
+	text := g.formatKeys()
 	y := h - len(text) - 1
 
+	if g.paused {
+		g.lines(x, y-1, []string{" == PAUSE == "}, legend.Type)
+	}
 	g.lines(x, y, text, legend.Type)
 }
 
