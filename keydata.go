@@ -9,29 +9,30 @@ import "strings"
 // AltKeys are used for special cases, per example, when the game is
 // paused. Thus, it is optional (nil can be passed)
 type ScreenKeyData struct {
-	Keys    *map[Key]Event
-	AltKeys *map[Key]Event
+	Keys    *KeyEventMap
+	AltKeys *KeyEventMap
 	Legend  *Legend
 }
 
 type Legend struct {
 	// type can be either left or middle
 	Type     string
-	Keys     *[]KeyEvent
+	Keys     *KeyEventMap
 	Selected int
 }
 
-func newScreenKeyData(k *map[Key]Event, al *map[Key]Event, lk *[]KeyEvent, lt string) *ScreenKeyData {
+func NewScreenKeyData(k *KeyEventMap, al *KeyEventMap, lk *KeyEventMap, lt string) *ScreenKeyData {
 	legend := &Legend{lt, lk, 0}
 	return &ScreenKeyData{k, al, legend}
 }
 
 var screens = map[string]*ScreenKeyData{
-	screenStartMenu: newScreenKeyData(&keysStart, nil, &legendKeysStart, "middle"),
-	screenGame:      newScreenKeyData(&keysGame, &altKeysGame, &legendKeysGame, "left"),
+	screenStartMenu: NewScreenKeyData(&keysStart, nil, &legendKeysStart, "middle"),
+	screenGame:      NewScreenKeyData(&keysGame, &altKeysGame, &legendKeysGame, "left"),
 }
 
-// Fetches the keys and event descriptions and formats them.
+// Fetches the keys and event descriptions and formats them
+// into a format suitable for showing on the screen as a legend.
 // Mode dictates should keys be format for left or middle.
 // May be moved to another file in the future.
 func (g *Game) formatKeys() []string {
@@ -92,7 +93,7 @@ func (g *Game) formatKeys() []string {
 		}
 
 		// add key event specific things
-		switch keyevt.Event.Name {
+		switch keyevt.Event {
 		case eventToggleAI:
 			thstring += ": [ "
 			if !g.aiActive {
@@ -118,65 +119,4 @@ func (g *Game) formatKeys() []string {
 	}
 
 	return final
-}
-
-// Keys which can be triggered when game is started
-var keysStart = map[Key]Event{
-	newKey("SPACE", stateClick): newEvent(eventStart, "Start Game"),
-	newKey("ENTER", stateClick): newEvent(eventMenuSelect, "Select Menu Action"),
-	newKey("Up", stateNormal):   newEvent(eventMenuUp, "Select Action Above"),
-	newKey("Down", stateNormal): newEvent(eventMenuDown, "Select Action Below"),
-	newKey("Q", stateClick):     newEvent(eventDestroy, "Quit"),
-	newKey("P", stateClick):     newEvent(eventTogglePause, "Toggle Pause"),
-	newKey("R", stateClick):     newEvent(eventReset, "Reset Round"),
-	newKey("T", stateClick):     newEvent(eventSwitchTheme, "Switch Theme"),
-	newKey("A", stateClick):     newEvent(eventToggleAI, "Toggle AI"),
-}
-
-// Keys which can be triggered when game is started
-var keysGame = map[Key]Event{
-	newKey("W", stateHold):    newEvent(eventP1Up, "Move Player1 Up"),
-	newKey("S", stateHold):    newEvent(eventP1Down, "Move Player1 Down"),
-	newKey("Up", stateHold):   newEvent(eventP2Up, "Move Player2 Up"),
-	newKey("Down", stateHold): newEvent(eventP2Down, "Move Player2 Down"),
-	newKey("Q", stateClick):   newEvent(eventDestroy, "Quit"),
-	newKey("P", stateClick):   newEvent(eventTogglePause, "Toggle Pause"),
-	newKey("R", stateClick):   newEvent(eventReset, "Reset Round"),
-	newKey("T", stateClick):   newEvent(eventSwitchTheme, "Switch Theme"),
-}
-
-var altKeysGame = map[Key]Event{
-	newKey("W", stateHold):      newEvent(eventP1Up, "Move Player1 Up"),
-	newKey("S", stateHold):      newEvent(eventP1Down, "Move Player1 Down"),
-	newKey("ENTER", stateClick): newEvent(eventMenuSelect, "Select Menu Action"),
-	newKey("Up", stateNormal):   newEvent(eventMenuUp, "Select Action Above"),
-	newKey("Down", stateNormal): newEvent(eventMenuDown, "Select Action Below"),
-	newKey("Q", stateClick):     newEvent(eventDestroy, "Quit"),
-	newKey("P", stateClick):     newEvent(eventTogglePause, "Toggle Pause"),
-	newKey("R", stateClick):     newEvent(eventReset, "Reset Round"),
-	newKey("T", stateClick):     newEvent(eventSwitchTheme, "Switch Theme"),
-}
-
-var legendKeysStart = []KeyEvent{
-	newKeyEvent("SPACE", stateClick, eventStart, "Start Game"),
-	newKeyEvent("Q", stateClick, eventDestroy, "Quit"),
-	newKeyEvent("P", stateClick, eventTogglePause, "Toggle Pause"),
-	newKeyEvent("R", stateClick, eventReset, "Reset Round"),
-	newKeyEvent("A", stateClick, eventToggleAI, "Toggle AI"),
-	newKeyEvent("T", stateClick, eventSwitchTheme, "Switch Theme"),
-	newKeyEvent("W", stateHold, eventP1Up, "Move Player1 Up"),
-	newKeyEvent("S", stateHold, eventP1Down, "Move Player1 Down"),
-	newKeyEvent("Up", stateHold, eventP2Up, "Move Player2 Up"),
-	newKeyEvent("Down", stateHold, eventP2Down, "Move Player2 Down"),
-}
-
-var legendKeysGame = []KeyEvent{
-	newKeyEvent("Q", stateClick, eventDestroy, "Quit"),
-	newKeyEvent("P", stateClick, eventTogglePause, "Toggle Pause"),
-	newKeyEvent("R", stateClick, eventReset, "Reset Round"),
-	newKeyEvent("T", stateClick, eventSwitchTheme, "Switch Theme"),
-	newKeyEvent("W", stateHold, eventP1Up, "Move Player1 Up"),
-	newKeyEvent("S", stateHold, eventP1Down, "Move Player1 Down"),
-	newKeyEvent("Up", stateHold, eventP2Up, "Move Player2 Up"),
-	newKeyEvent("Down", stateHold, eventP2Down, "Move Player2 Down"),
 }

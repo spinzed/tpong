@@ -24,8 +24,8 @@ func (g *Game) PerformGameTick() {
 	}
 
 	// keys that don't persist when game is paused
-	for _, key := range *g.activeEvents {
-		switch key {
+	for _, event := range *g.activeEvents {
+		switch event {
 		case eventP1Up:
 			g.movePlayerUp(g.players.P1)
 		case eventP1Down:

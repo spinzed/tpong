@@ -3,7 +3,6 @@ package main
 import (
 	"time"
 
-	"github.com/MarinX/keylogger"
 	"github.com/gdamore/tcell"
 )
 
@@ -11,10 +10,10 @@ type Game struct {
 	screen       tcell.Screen
 	players      *Players
 	ball         *Ball
-	activeEvents *[]string
-	keyDisp      chan KeyEvent
+	activeEvents *[]Event
+	keyDisp      chan StateEvent
 	ticker       *time.Ticker
-	keyboard     []*keylogger.KeyLogger
+	keyboard     *InputHandler
 	theme        *ThemeHandler
 	keyData      *ScreenKeyData
 	started      bool
@@ -35,7 +34,6 @@ func CreateGame(options *GameSettings) (*Game, error) {
 	if err := g.Init(options); err != nil {
 		return nil, err
 	}
-
 	return &g, nil
 }
 
@@ -46,11 +44,9 @@ func initScreen() (tcell.Screen, error) {
 	if err != nil {
 		return s, err
 	}
-
 	if err = s.Init(); err != nil {
 		return s, err
 	}
-
 	return s, nil
 }
 
@@ -65,25 +61,18 @@ func (g *Game) Init(optns *GameSettings) error {
 	}()
 
 	// keyboard init
-	k, err := newKeyboard()
-
-	if err != nil {
+	if g.keyboard, err = NewInputHandler(g.getKeys); err != nil {
 		return err
 	}
-
-	g.keyboard = k
 
 	// screen init
-	s, err := initScreen()
-
-	if err != nil {
+	if g.screen, err = initScreen(); err != nil {
 		return err
 	}
-
-	g.screen = s
 
 	// game asset init
 	w, h := g.screen.Size()
+
 	// half of the width needs to be divisible with 2 because of ball
 	if w/2%2 == 1 {
 		w += 2
@@ -92,9 +81,9 @@ func (g *Game) Init(optns *GameSettings) error {
 	g.ball = newBall((w-ballDiam)/2, 0, ballDiam, 1, 1)
 
 	// keyboard channels and key/event state init
-	var activeEvents []string
+	var activeEvents []Event
 	g.activeEvents = &activeEvents
-	g.keyDisp = make(chan KeyEvent)
+	g.keyDisp = make(chan StateEvent)
 
 	// ticker init according to framerate variable
 	g.ticker = time.NewTicker(1000000 / framerate * time.Microsecond)
@@ -131,10 +120,7 @@ func (g *Game) Loop() {
 	}()
 
 	// start the keyboard input listeners
-	// Im a bloody genious
-	for _, kb := range g.keyboard {
-		go keyboardListen(kb, g.getKeys, g.keyDisp)
-	}
+	go g.keyboard.Listen(g.keyDisp)
 
 	for g.loopActive {
 		select {
@@ -217,7 +203,7 @@ func (g *Game) toggleAI() {
 }
 
 // Gets the current active key map.
-func (g *Game) getKeys() *map[Key]Event {
+func (g *Game) getKeys() *KeyEventMap {
 	if g.paused && g.keyData.AltKeys != nil {
 		return g.keyData.AltKeys
 	}
@@ -255,13 +241,14 @@ func (g *Game) moveMenuSelectedUp() {
 		legend.Selected = len(*legend.Keys) - 1
 	}
 
-	keysarr := *legend.Keys
-	ev := keysarr[legend.Selected]
+	//keysarr := *legend.Keys
+	//ev := keysarr[legend.Selected].Event
 
 	// if the event is hold up/down, skip it
-	if ev.State == stateHold || ev.State == stateHoldEnd {
-		g.moveMenuSelectedUp()
-	}
+	//if ev.State == stateHold || ev.State == stateHoldEnd {
+	//	return
+	//}
+	//g.moveMenuSelectedUp()
 }
 
 // Move selected legend item down.
@@ -273,13 +260,14 @@ func (g *Game) moveMenuSelectedDown() {
 		legend.Selected = 0
 	}
 
-	keysarr := *legend.Keys
-	ev := keysarr[legend.Selected]
+	//keysarr := *legend.Keys
+	//ev := keysarr[legend.Selected].Event
 
 	// if the event is hold up/down, skip it
-	if ev.State == stateHold || ev.State == stateHoldEnd {
-		g.moveMenuSelectedDown()
-	}
+	//if ev.State == stateHold || ev.State == stateHoldEnd {
+	//	return
+	//}
+	//g.moveMenuSelectedDown()
 }
 
 // Dispatches an action according to the selected legend item.
@@ -287,44 +275,53 @@ func (g *Game) doSelectedMenuAction() {
 	legend := g.keyData.Legend
 	keysarr := *legend.Keys
 
-	ev := keysarr[legend.Selected]
+	// extract the event that has be dispatched
+	ev := keysarr[legend.Selected].Event
 
-	// if it triggers hold or stop hold action, return (since the key isnt actually held)
-	if ev.State == stateHold || ev.State == stateHoldEnd {
-		return
+	// if it triggers hold or stop hold action, return (since the key isn't actually held)
+	//if ev.State == stateHold || ev.State == stateHoldEnd {
+	//	return
+	//}
+
+	g.dispatch(ev)
+}
+
+func filterEvent(e Event, old []Event) []Event {
+	var newEvents []Event
+
+	for _, event := range old {
+		if e.Name != event.Name {
+			newEvents = append(newEvents, event)
+		}
 	}
-
-	g.dispatchEvent(ev)
+	return newEvents
 }
 
 // Triggers an action based on the event an key that have been passed.
-func (g *Game) dispatchEvent(e KeyEvent) {
+func (g *Game) dispatchEvent(e StateEvent) {
 	// filter the key from the slice if it is in there
-	switch e.Key.State {
-	case stateHold, stateHoldEnd:
-		var newEvents []string
-
-		for _, event := range *g.activeEvents {
-			if e.Event.Name != event {
-				newEvents = append(newEvents, event)
-			}
-		}
+	switch e.State {
+	case eventStateStarting:
+		// in case the event existed in the array, remove it
+		newEvents := filterEvent(e.Event, *g.activeEvents)
 
 		// update only if there are less than 5 chars and key is pressed down
-		if len(*g.activeEvents) < 5 && e.State == stateHold {
-			newEvents = append(newEvents, e.Event.Name)
+		if len(*g.activeEvents) < 5 {
+			newEvents = append(newEvents, e.Event)
 		}
 
 		// update the old array
 		g.activeEvents = &newEvents
-	case stateClick, stateRelease, stateNormal:
-		g.dispatchAction(e.Event)
+	case eventStateEnding:
+		*g.activeEvents = filterEvent(e.Event, *g.activeEvents)
+	case eventStatePulse:
+		g.dispatch(e.Event)
 	}
 }
 
 // Calls an action according to the event.
-func (g *Game) dispatchAction(e Event) {
-	switch e.Name {
+func (g *Game) dispatch(e Event) {
+	switch e {
 	case eventDestroy:
 		g.EndLoop()
 	case eventStart:
