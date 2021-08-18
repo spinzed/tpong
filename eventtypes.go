@@ -61,3 +61,9 @@ func NewEvent(name string, desc string) Event {
 	// because it will be set when the event is dispatched
 	return Event{name, desc}
 }
+
+type GameInfo struct {
+	Keys       KeyEventMap
+	LegendKeys KeyEventMap
+	LegendType string
+}

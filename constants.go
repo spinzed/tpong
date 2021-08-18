@@ -20,13 +20,26 @@ const (
 	playerP2         = "p2"
 )
 
+type GameState string
+
+// Game states
+const (
+	gameStateStarting   GameState = "starting"
+	gameStateMainMenu   GameState = "mainMenu"
+	gameStateInGame     GameState = "inGame"
+	gameStatePaused     GameState = "paused"
+	gameStateHardPaused GameState = "hardPaused"
+	gameStateEnding     GameState = "ending" // to break the game loop
+	gameStateEnded      GameState = "ended"  // when game.End is called
+)
+
 // Key states
 const (
-	stateClick   = "stateClick"
-	stateRelease = "stateRelease"
-	stateHold    = "stateHold"
-	stateHoldEnd = "stateHoldEnd"
-	stateNormal  = "stateHeld"
+	keyStateNormal  = "stateNormal"
+	keyStateClick   = "stateClick"
+	keyStateRelease = "stateRelease"
+	keyStateHold    = "stateHold"
+	keyStateEnd     = "stateHoldEnd"
 )
 
 // StatedEvent states
@@ -65,61 +78,67 @@ var (
 
 // Keys which can be triggered when game is started
 var keysStart = KeyEventMap{
-	*NewKeyEvent(NewKey("SPACE", stateClick), eventStart),
-	*NewKeyEvent(NewKey("ENTER", stateClick), eventMenuSelect),
-	*NewKeyEvent(NewKey("Up", stateNormal), eventMenuUp),
-	*NewKeyEvent(NewKey("Down", stateNormal), eventMenuDown),
-	*NewKeyEvent(NewKey("Q", stateClick), eventDestroy),
-	*NewKeyEvent(NewKey("P", stateClick), eventTogglePause),
-	*NewKeyEvent(NewKey("R", stateClick), eventReset),
-	*NewKeyEvent(NewKey("T", stateClick), eventSwitchTheme),
-	*NewKeyEvent(NewKey("A", stateClick), eventToggleAI),
+	*NewKeyEvent(NewKey("SPACE", keyStateClick), eventStart),
+	*NewKeyEvent(NewKey("ENTER", keyStateClick), eventMenuSelect),
+	*NewKeyEvent(NewKey("Up", keyStateNormal), eventMenuUp),
+	*NewKeyEvent(NewKey("Down", keyStateNormal), eventMenuDown),
+	*NewKeyEvent(NewKey("Q", keyStateClick), eventDestroy),
+	*NewKeyEvent(NewKey("P", keyStateClick), eventTogglePause),
+	*NewKeyEvent(NewKey("R", keyStateClick), eventReset),
+	*NewKeyEvent(NewKey("T", keyStateClick), eventSwitchTheme),
+	*NewKeyEvent(NewKey("A", keyStateClick), eventToggleAI),
 }
 
 // Keys which can be triggered when game is started
 var keysGame = KeyEventMap{
-	*NewKeyEvent(NewKey("W", stateHold), eventP1Up),
-	*NewKeyEvent(NewKey("S", stateHold), eventP1Down),
-	*NewKeyEvent(NewKey("Up", stateHold), eventP2Up),
-	*NewKeyEvent(NewKey("Down", stateHold), eventP2Down),
-	*NewKeyEvent(NewKey("Q", stateClick), eventDestroy),
-	*NewKeyEvent(NewKey("P", stateClick), eventTogglePause),
-	*NewKeyEvent(NewKey("R", stateClick), eventReset),
-	*NewKeyEvent(NewKey("T", stateClick), eventSwitchTheme),
+	*NewKeyEvent(NewKey("W", keyStateHold), eventP1Up),
+	*NewKeyEvent(NewKey("S", keyStateHold), eventP1Down),
+	*NewKeyEvent(NewKey("Up", keyStateHold), eventP2Up),
+	*NewKeyEvent(NewKey("Down", keyStateHold), eventP2Down),
+	*NewKeyEvent(NewKey("Q", keyStateClick), eventDestroy),
+	*NewKeyEvent(NewKey("P", keyStateClick), eventTogglePause),
+	*NewKeyEvent(NewKey("R", keyStateClick), eventReset),
+	*NewKeyEvent(NewKey("T", keyStateClick), eventSwitchTheme),
 }
 
-var altKeysGame = KeyEventMap{
-	*NewKeyEvent(NewKey("W", stateHold), eventP1Up),
-	*NewKeyEvent(NewKey("S", stateHold), eventP1Down),
-	*NewKeyEvent(NewKey("ENTER", stateClick), eventMenuSelect),
-	*NewKeyEvent(NewKey("Up", stateNormal), eventMenuUp),
-	*NewKeyEvent(NewKey("Down", stateNormal), eventMenuDown),
-	*NewKeyEvent(NewKey("Q", stateClick), eventDestroy),
-	*NewKeyEvent(NewKey("P", stateClick), eventTogglePause),
-	*NewKeyEvent(NewKey("R", stateClick), eventReset),
-	*NewKeyEvent(NewKey("T", stateClick), eventSwitchTheme),
+var keysPause = KeyEventMap{
+	*NewKeyEvent(NewKey("W", keyStateHold), eventP1Up),
+	*NewKeyEvent(NewKey("S", keyStateHold), eventP1Down),
+	*NewKeyEvent(NewKey("ENTER", keyStateClick), eventMenuSelect),
+	*NewKeyEvent(NewKey("Up", keyStateNormal), eventMenuUp),
+	*NewKeyEvent(NewKey("Down", keyStateNormal), eventMenuDown),
+	*NewKeyEvent(NewKey("Q", keyStateClick), eventDestroy),
+	*NewKeyEvent(NewKey("P", keyStateClick), eventTogglePause),
+	*NewKeyEvent(NewKey("R", keyStateClick), eventReset),
+	*NewKeyEvent(NewKey("T", keyStateClick), eventSwitchTheme),
 }
 
 var legendKeysStart = KeyEventMap{
-	*NewKeyEvent(NewKey("SPACE", stateClick), eventStart),
-	*NewKeyEvent(NewKey("Q", stateClick), eventDestroy),
-	*NewKeyEvent(NewKey("P", stateClick), eventTogglePause),
-	*NewKeyEvent(NewKey("R", stateClick), eventReset),
-	*NewKeyEvent(NewKey("A", stateClick), eventToggleAI),
-	*NewKeyEvent(NewKey("T", stateClick), eventSwitchTheme),
-	*NewKeyEvent(NewKey("W", stateHold), eventP1Up),
-	*NewKeyEvent(NewKey("S", stateHold), eventP1Down),
-	*NewKeyEvent(NewKey("Up", stateHold), eventP2Up),
-	*NewKeyEvent(NewKey("Down", stateHold), eventP2Down),
+	*NewKeyEvent(NewKey("SPACE", keyStateClick), eventStart),
+	*NewKeyEvent(NewKey("Q", keyStateClick), eventDestroy),
+	*NewKeyEvent(NewKey("P", keyStateClick), eventTogglePause),
+	*NewKeyEvent(NewKey("R", keyStateClick), eventReset),
+	*NewKeyEvent(NewKey("A", keyStateClick), eventToggleAI),
+	*NewKeyEvent(NewKey("T", keyStateClick), eventSwitchTheme),
+	*NewKeyEvent(NewKey("W", keyStateHold), eventP1Up),
+	*NewKeyEvent(NewKey("S", keyStateHold), eventP1Down),
+	*NewKeyEvent(NewKey("Up", keyStateHold), eventP2Up),
+	*NewKeyEvent(NewKey("Down", keyStateHold), eventP2Down),
 }
 
-var legendKeysGame = KeyEventMap{
-	*NewKeyEvent(NewKey("Q", stateClick), eventDestroy),
-	*NewKeyEvent(NewKey("P", stateClick), eventTogglePause),
-	*NewKeyEvent(NewKey("R", stateClick), eventReset),
-	*NewKeyEvent(NewKey("T", stateClick), eventSwitchTheme),
-	*NewKeyEvent(NewKey("W", stateHold), eventP1Up),
-	*NewKeyEvent(NewKey("S", stateHold), eventP1Down),
-	*NewKeyEvent(NewKey("Up", stateHold), eventP2Up),
-	*NewKeyEvent(NewKey("Down", stateHold), eventP2Down),
+var legendKeysPaused = KeyEventMap{
+	*NewKeyEvent(NewKey("Q", keyStateClick), eventDestroy),
+	*NewKeyEvent(NewKey("P", keyStateClick), eventTogglePause),
+	*NewKeyEvent(NewKey("R", keyStateClick), eventReset),
+	*NewKeyEvent(NewKey("T", keyStateClick), eventSwitchTheme),
+	*NewKeyEvent(NewKey("W", keyStateHold), eventP1Up),
+	*NewKeyEvent(NewKey("S", keyStateHold), eventP1Down),
+	*NewKeyEvent(NewKey("Up", keyStateHold), eventP2Up),
+	*NewKeyEvent(NewKey("Down", keyStateHold), eventP2Down),
+}
+
+var screenData = map[GameState]GameInfo{
+	gameStateMainMenu: {keysStart, legendKeysStart, "middle"},
+	gameStateInGame:   {keysGame, nil, ""},
+	gameStatePaused:   {keysPause, legendKeysPaused, "left"},
 }

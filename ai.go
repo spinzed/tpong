@@ -1,8 +1,8 @@
 package main
 
 func (g *Game) aiMove() {
-	w, h := g.screen.Size()
-	bw, bh := g.ball.Coords()
+	w, h := g.ui.screen.Size()
+	bw, bh := g.ui.ball.Coords()
 	pw, ph := g.players.P2.Coords()
 
 	w, bw, pw = w/2, bw/2, pw/2
@@ -16,7 +16,7 @@ func (g *Game) aiMove() {
 
 	currentW := pw - bw
 	currentH := bh
-	_, vely := g.ball.Vels()
+	_, vely := g.ui.ball.Vels()
 	if vely > 0 {
 		vely = 1
 	} else {

@@ -61,22 +61,22 @@ func inputListen(k *keylogger.KeyLogger, f func() *KeyEventMap, c chan<- StateEv
 		for _, keyEvent := range *keyEvents {
 			evt := StateEvent{keyEvent.Event, eventStatePulse}
 
-			if keyEvent.Key.State == stateNormal && !e.KeyRelease() {
+			if keyEvent.Key.State == keyStateNormal && !e.KeyRelease() {
 				evt.State = eventStatePulse
 				c <- evt
 			}
 
-			if e.KeyPress() && keyEvent.Key.State == stateClick {
+			if e.KeyPress() && keyEvent.Key.State == keyStateClick {
 				evt.State = eventStatePulse
 				c <- evt
 			}
 
-			if e.KeyPress() && keyEvent.Key.State == stateHold {
+			if e.KeyPress() && keyEvent.Key.State == keyStateHold {
 				evt.State = eventStateStarting
 				c <- evt
 			}
 
-			if e.KeyRelease() && keyEvent.Key.State == stateHold {
+			if e.KeyRelease() && keyEvent.Key.State == keyStateHold {
 				evt.State = eventStateEnding
 				c <- evt
 			}
