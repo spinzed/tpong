@@ -1,12 +1,10 @@
 package main
 
-type TickFunc func() bool
-
 // Update the start menu state every tick
 func (g *Game) PerformStartMenuTick() {
 	defer g.drawStartGameMenu()
 
-	g.ball.Move()
+	g.ui.ball.Move()
 	g.checkCollision(true)
 }
 
@@ -19,13 +17,13 @@ func (g *Game) PerformGameTick() {
 	// this should be called after every tick, thats why it's defered
 	defer g.drawGameTick()
 
-	if g.paused || g.hardPaused {
+	if g.state == gameStatePaused || g.state == gameStateHardPaused {
 		return
 	}
 
 	// keys that don't persist when game is paused
-	for _, key := range *g.activeEvents {
-		switch key {
+	for _, event := range *g.activeEvents {
+		switch event {
 		case eventP1Up:
 			g.movePlayerUp(g.players.P1)
 		case eventP1Down:
@@ -46,6 +44,6 @@ func (g *Game) PerformGameTick() {
 	}
 
 	// move the ball for 1 tick
-	g.ball.Move()
+	g.ui.ball.Move()
 	g.checkCollision(false)
 }
