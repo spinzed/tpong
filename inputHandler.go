@@ -34,9 +34,10 @@ func NewInputHandler(f func() *KeyEventMap) (*InputHandler, error) {
 }
 
 // Listen on all input devices and pass events through one channel.
+// This function can also be changed to change the channel.
 func (i *InputHandler) Listen(c chan<- StateEvent) {
 	for _, l := range *i.loggers {
-		inputListen(l, i.eventMap, c)
+		go inputListen(l, i.eventMap, c)
 	}
 }
 

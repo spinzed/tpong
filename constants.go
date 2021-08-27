@@ -142,3 +142,13 @@ var screenData = map[GameState]GameInfo{
 	gameStateInGame:   {keysGame, nil, ""},
 	gameStatePaused:   {keysPause, legendKeysPaused, "left"},
 }
+
+var localEvents = []Event{
+	eventSwitchTheme,
+	eventMenuUp,
+	eventMenuDown,
+	eventMenuSelect,
+	eventToggleAI,
+	eventDestroy,
+	eventStart,
+}

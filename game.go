@@ -13,6 +13,8 @@ type Game struct {
 	ticker       *time.Ticker
 	state        GameState
 	lastState    GameState
+	server       *Server
+	localClient  Client
 	started      bool
 	aiActive     bool
 }
@@ -74,7 +76,7 @@ func (g *Game) Loop() {
 	defer g.End()
 
 	// start the keyboard input listeners
-	go g.input.Listen(g.keyDisp)
+	g.input.Listen(g.keyDisp)
 
 	// set the main menu game state
 	g.SetState(gameStateMainMenu)
@@ -88,7 +90,7 @@ func (g *Game) Loop() {
 			g.drawGUI()
 			g.updateTerminal()
 		case e := <-g.keyDisp:
-			g.dispatchEvent(e)
+			g.registerEvent(e)
 		}
 	}
 }
@@ -100,12 +102,31 @@ func (g *Game) EndLoop() {
 
 // Start the game
 func (g *Game) Start() {
-	if !g.started {
-		// reset the ball from the start menu
-		g.ui.ball.Reset()
-		g.SetState(gameStateInGame)
-		g.started = true
+	if g.started {
+		return
 	}
+
+	// setup the server and register the clients
+	g.server = NewServer()
+
+	recv := make(chan StateEvent)
+
+	// register the local client
+	g.localClient = NewLocalClient(g.ui.screen, g.server.EventListener, recv)
+	g.server.RegisterClient(g.localClient)
+
+	// register every event that the client recieved from the server
+	go func() {
+		for {
+			evt := <-recv
+			g.dispatchEvent(evt)
+		}
+	}()
+
+	// reset the ball from the start menu
+	g.ui.ball.Reset()
+	g.SetState(gameStateInGame)
+	g.started = true
 }
 
 // End the game. Must be called when game ends or if g.Init fails for cleanup.
@@ -125,6 +146,12 @@ func (g *Game) Reset() {
 		p.Reset()
 	}
 }
+
+//func (g *Game) RegisterClient(p Player) {
+//	c := NewLocalClient(p, g.ui.screen)
+//	g.localClients = append(g.localClients, c)
+//	g.server.RegisterClient(c)
+//}
 
 func (g *Game) SetState(s GameState) {
 	g.lastState = g.state
@@ -224,8 +251,19 @@ func (g *Game) moveMenuSelectedDown() {
 }
 
 func (g *Game) doSelectedMenuAction() {
-	// TODO
-	g.ui.GetSelectedMenuAction(g.state)
+	evt := g.ui.GetSelectedMenuAction(g.state)
+	evtState := StateEvent{evt, eventStatePulse}
+
+	g.registerEvent(evtState)
+}
+
+func containsEvent(slice []Event, elm Event) bool {
+	for _, e := range slice {
+		if e == elm {
+			return true
+		}
+	}
+	return false
 }
 
 func filterEvent(e Event, old []Event) []Event {
@@ -237,6 +275,17 @@ func filterEvent(e Event, old []Event) []Event {
 		}
 	}
 	return newEvents
+}
+
+// Decides the type of a event and depending on it, it either triggers an event
+// or passes to the server so that it can broadcast it to every node.
+// This is usually called when a new input has been passed by the input handler.
+func (g *Game) registerEvent(e StateEvent) {
+	if containsEvent(localEvents, e.Event) {
+		g.dispatchEvent(e)
+		return
+	}
+	g.localClient.SendUpdate(e)
 }
 
 // Triggers an action based on the event an key that have been passed.
@@ -257,12 +306,12 @@ func (g *Game) dispatchEvent(e StateEvent) {
 	case eventStateEnding:
 		*g.activeEvents = filterEvent(e.Event, *g.activeEvents)
 	case eventStatePulse:
-		g.dispatch(e.Event)
+		g.__rawDispatchAction(e.Event)
 	}
 }
 
 // Calls an action according to the event.
-func (g *Game) dispatch(e Event) {
+func (g *Game) __rawDispatchAction(e Event) {
 	switch e {
 	case eventDestroy:
 		g.EndLoop()

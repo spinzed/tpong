@@ -64,7 +64,7 @@ func (ui *UIHandler) MoveMenuSelectedUp(state GameState) {
 	legend := screenData[state].LegendKeys
 
 	if ui.menuSelect < 0 {
-		ui.menuSelect = len(legend) - 2
+		ui.menuSelect = len(legend) - 1
 	}
 }
 
@@ -73,14 +73,14 @@ func (ui *UIHandler) MoveMenuSelectedDown(state GameState) {
 	ui.menuSelect++
 	legend := screenData[state].LegendKeys
 
-	if ui.menuSelect >= len(legend)-1 {
+	if ui.menuSelect > len(legend)-1 {
 		ui.menuSelect = 0
 	}
 }
 
 // Dispatches an action according to the selected legend item.
 func (ui *UIHandler) GetSelectedMenuAction(state GameState) Event {
-	keysarr := screenData[state].Keys
+	keysarr := screenData[state].LegendKeys
 
 	// extract the event that has be dispatched and return it
 	return keysarr[ui.menuSelect].Event
